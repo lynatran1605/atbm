@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const https = require("https");
 const path = require("path");
 const express = require("express");
@@ -12,13 +12,15 @@ const createAuthRoutes = require("./routes/authRoutes");
 const { createNotesRoutes, createSharedNotesRoutes } = require("./routes/notesRoutes");
 const createUserRoutes = require("./routes/userRoutes");
 
-dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+const projectRoot = path.resolve(__dirname, "..");
+dotenv.config({ path: path.join(projectRoot, ".env") });
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const { admin, db } = initializeFirebase();
-const keyPath = path.resolve(process.cwd(), process.env.SSL_KEY_PATH || "certs/key.pem");
-const certPath = path.resolve(process.cwd(), process.env.SSL_CERT_PATH || "certs/cert.pem");
+const frontendDir = path.join(projectRoot, "frontend");
+const keyPath = path.resolve(projectRoot, process.env.SSL_KEY_PATH || "certs/key.pem");
+const certPath = path.resolve(projectRoot, process.env.SSL_CERT_PATH || "certs/cert.pem");
 const hasHttpsCertificates = fs.existsSync(keyPath) && fs.existsSync(certPath);
 const configuredBaseUrl = (process.env.APP_BASE_URL || "").trim();
 const defaultBaseUrl = `${hasHttpsCertificates ? "https" : "http"}://localhost:${PORT}`;
@@ -28,7 +30,22 @@ app.locals.baseUrl = configuredBaseUrl || defaultBaseUrl;
 app.use(cors());
 app.use(bodyParser.json({ limit: "2mb" }));
 app.use(morgan("dev"));
-app.use(express.static(path.join(process.cwd(), "frontend")));
+app.use((req, res, next) => {
+  if (configuredBaseUrl) {
+    req.app.locals.baseUrl = configuredBaseUrl;
+    return next();
+  }
+
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const protocol = String(Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto || req.protocol || "https")
+    .split(",")[0]
+    .trim();
+  const host = req.headers.host;
+
+  req.app.locals.baseUrl = protocol && host ? `${protocol}://${host}` : defaultBaseUrl;
+  next();
+});
+app.use(express.static(frontendDir));
 
 app.get("/api/health", (req, res) => {
   res.json({ message: "Diary API is running." });
@@ -40,24 +57,28 @@ app.use("/api/notes", authMiddleware, createNotesRoutes({ db }));
 app.use("/api/user", authMiddleware, createUserRoutes({ db }));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "frontend", "index.html"));
+  res.sendFile(path.join(frontendDir, "index.html"));
 });
 
-if (!hasHttpsCertificates) {
-  console.warn(`HTTPS certificates not found. Starting with HTTP at ${defaultBaseUrl}.`);
-  const server = app.listen(PORT, () => {
-    console.log(`Server ready at ${defaultBaseUrl}`);
-  });
+function startLocalServer() {
+  if (!hasHttpsCertificates) {
+    console.warn(`HTTPS certificates not found. Starting with HTTP at ${defaultBaseUrl}.`);
+    const server = app.listen(PORT, () => {
+      console.log(`Server ready at ${defaultBaseUrl}`);
+    });
 
-  server.on("error", (error) => {
-    if (error.code === "EADDRINUSE") {
-      console.error(`Port ${PORT} is already in use. Close the existing server or change PORT in .env.`);
-      return;
-    }
+    server.on("error", (error) => {
+      if (error.code === "EADDRINUSE") {
+        console.error(`Port ${PORT} is already in use. Close the existing server or change PORT in .env.`);
+        return;
+      }
 
-    console.error(error);
-  });
-} else {
+      console.error(error);
+    });
+
+    return;
+  }
+
   const server = https.createServer(
     {
       key: fs.readFileSync(keyPath),
@@ -79,3 +100,9 @@ if (!hasHttpsCertificates) {
     console.error(error);
   });
 }
+
+if (require.main === module) {
+  startLocalServer();
+}
+
+module.exports = app;

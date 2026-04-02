@@ -1,4 +1,4 @@
-﻿# Personal Diary Web Application
+# Personal Diary Web Application
 
 Project full-stack nhat ky ca nhan cho thu muc `less7`.
 
@@ -91,6 +91,48 @@ https://localhost:3443
 ```
 
 Neu chua tao certificate thi app van chay bang HTTP de ban test nhanh.
+
+## Deploy len Vercel
+
+Project da duoc chinh de:
+
+- Local van chay bang `npm run dev` hoac `npm start`
+- Vercel goi backend qua serverless function tu `backend/server.js`
+- Frontend static trong `frontend/`
+
+### Bien moi truong can them tren Vercel
+
+- `APP_NAME`
+- `JWT_SECRET`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+### Luu y Firebase tren Vercel
+
+Khong upload file service account json len Vercel. Hay mo file:
+
+```text
+backend/config/firebase-service-account.json
+```
+
+copy toan bo noi dung JSON roi dan vao environment variable:
+
+```text
+FIREBASE_SERVICE_ACCOUNT_JSON
+```
+
+Neu ban co domain Vercel co dinh, co the them:
+
+```text
+APP_BASE_URL=https://ten-app-cua-ban.vercel.app
+```
+
+Neu khong them `APP_BASE_URL`, backend se tu dong lay domain dang request de tao share link.
 
 ## API chinh
 

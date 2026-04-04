@@ -11,84 +11,33 @@
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
   </head>
   <body data-page="home">
-    <div id="app">
-      <header class="topbar">
-        <button id="brand-home" class="brand brand-btn" type="button">BloomNote</button>
-        <nav class="nav-links">
-          <button data-section="home" class="nav-btn active" type="button">Trang chủ</button>
-          <button data-section="intro" class="nav-btn" type="button">Giới thiệu</button>
-          <button data-section="about" class="nav-btn" type="button">Về chúng tôi</button>
+    <div id="app" class="home-splash">
+      <header class="home-topbar">
+        <button id="brand-home" class="home-logo-btn" type="button" aria-label="BloomNote home">
+          <span class="home-logo-frame">
+            <img src="./images/logo-hub.webp" alt="BloomNote logo" class="home-logo-image" />
+          </span>
+        </button>
+        <div class="home-top-actions">
           <button id="nav-login" class="nav-btn nav-login" type="button">Đăng nhập</button>
           <button id="language-toggle" class="lang-btn" type="button">EN</button>
-        </nav>
+        </div>
       </header>
 
-      <main class="main-shell public-page">
-        <section id="home" class="landing-section hero-section">
-          <div class="hero-copy panel-shell">
-            <p id="home-kicker" class="section-kicker"></p>
-            <h1 id="home-title"></h1>
-            <p id="home-text" class="hero-text"></p>
-            <div id="hero-tags" class="hero-tags"></div>
-            <div class="hero-actions">
-              <button id="hero-about" class="primary-btn" type="button">Khám phá thêm</button>
-              <button id="hero-login" class="secondary-btn" type="button">Mở khu đăng nhập</button>
-            </div>
-          </div>
-          <div class="hero-feature panel-shell">
-            <div class="feature-card feature-card-main">
-              <span class="feature-label">Không gian riêng tư</span>
-              <h3>Nhật ký được viết trong một giao diện nhẹ, ấm và tập trung.</h3>
-              <p id="feature-home-copy"></p>
-            </div>
-            <div class="feature-grid">
-              <div class="feature-card">
-                <span class="feature-label">Bảo mật</span>
-                <p id="feature-encryption"></p>
-              </div>
-              <div class="feature-card">
-                <span class="feature-label">Kích hoạt</span>
-                <p id="feature-otp"></p>
-              </div>
-            </div>
+      <main class="home-splash-main">
+        <section id="home" class="home-splash-hero">
+          <p id="home-kicker" class="home-splash-kicker"></p>
+          <h1 id="home-title" class="home-splash-title"></h1>
+          <p id="home-text" class="home-splash-text"></p>
+          <div id="hero-tags" class="home-splash-tags"></div>
+          <div class="home-splash-actions">
+            <button id="hero-login" class="primary-btn" type="button">Mở khu đăng nhập</button>
           </div>
         </section>
 
-        <section id="intro" class="landing-section info-section">
-          <div class="section-heading">
-            <p id="intro-kicker" class="section-kicker"></p>
-            <h2 id="intro-title"></h2>
-          </div>
-          <div class="info-grid">
-            <article class="info-card panel-shell">
-              <h3 id="intro-card-title-1"></h3>
-              <p id="intro-card-text-1"></p>
-            </article>
-            <article class="info-card panel-shell">
-              <h3 id="intro-card-title-2"></h3>
-              <p id="intro-card-text-2"></p>
-            </article>
-            <article class="info-card panel-shell">
-              <h3 id="intro-card-title-3"></h3>
-              <p id="intro-card-text-3"></p>
-            </article>
-          </div>
-        </section>
-
-        <section id="about" class="landing-section about-section">
-          <div class="about-panel panel-shell">
-            <div>
-              <p id="about-kicker" class="section-kicker"></p>
-              <h2 id="about-title"></h2>
-            </div>
-            <p id="about-text" class="about-text"></p>
-          </div>
-          <div class="about-stats">
-            <div class="stat-card panel-shell"><strong>01</strong><span id="about-stat-1"></span></div>
-            <div class="stat-card panel-shell"><strong>02</strong><span id="about-stat-2"></span></div>
-            <div class="stat-card panel-shell"><strong>03</strong><span id="about-stat-3"></span></div>
-          </div>
-        </section>
+        <button id="hero-about" class="hidden" type="button" aria-hidden="true"></button>
+        <section id="intro" class="hidden" aria-hidden="true"></section>
+        <section id="about" class="hidden" aria-hidden="true"></section>
       </main>
     </div>
 

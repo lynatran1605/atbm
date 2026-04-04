@@ -14,83 +14,159 @@
     <main class="main-shell">
       <section class="dashboard">
         <aside class="sidebar">
-          <div class="sidebar-logo">BloomNote</div>
-          <button class="side-btn active" data-screen="dashboard-home">Trang chủ</button>
-          <button class="side-btn" data-screen="notes">Nhật ký</button>
-          <button class="side-btn" data-screen="shared-notes">Nhật ký được chia sẻ</button>
-          <button class="side-btn" data-screen="trash">Thùng rác</button>
+          <div>
+            <div class="sidebar-logo">BloomNote</div>
+            <p class="sidebar-note">Kh&#244;ng gian ri&#234;ng cho vi&#7871;t, l&#432;u v&#224; qu&#7843;n l&#253; nh&#7853;t k&#253; c&#225; nh&#226;n.</p>
+          </div>
+
+          <div class="sidebar-group">
+            <button class="side-btn active" data-screen="dashboard-home">Trang ch&#7911;</button>
+            <button class="side-btn" data-screen="notes">Nh&#7853;t k&#253;</button>
+            <button class="side-btn" data-screen="shared-notes">Nh&#7853;t k&#253; &#273;&#432;&#7907;c chia s&#7867;</button>
+            <button class="side-btn" data-screen="trash">Th&#249;ng r&#225;c</button>
+          </div>
+
+          <div class="sidebar-footer">
+            <strong>Ri&#234;ng t&#432; tr&#432;&#7899;c ti&#234;n</strong>
+            <p>N&#7897;i dung ch&#7881; hi&#7875;n th&#7883; r&#245; sau khi b&#7841;n ch&#7911; &#273;&#7897;ng m&#7903; kh&#243;a.</p>
+          </div>
         </aside>
 
         <section class="dashboard-content">
           <div class="dashboard-header">
             <div>
-              <h1 id="screen-title">Tổng quan</h1>
-              <p id="screen-subtitle">Quản lý nhật ký an toàn và riêng tư.</p>
+              <h1 id="screen-title">T&#7893;ng quan</h1>
+              <p id="screen-subtitle">Qu&#7843;n l&#253; nh&#7853;t k&#253; an to&#224;n v&#224; ri&#234;ng t&#432;.</p>
             </div>
             <div class="user-menu">
               <button id="user-dropdown-trigger" class="user-badge" type="button">User</button>
               <div id="user-dropdown" class="dropdown hidden">
-                <button data-profile-action="profile" type="button">Thông tin cá nhân</button>
-                <button data-profile-action="switch" type="button">Đổi tài khoản</button>
-                <button data-profile-action="logout" type="button">Đăng xuất</button>
+                <button data-profile-action="profile" type="button">Th&#244;ng tin c&#225; nh&#226;n</button>
+                <button data-profile-action="switch" type="button">&#272;&#7893;i t&#224;i kho&#7843;n</button>
+                <button data-profile-action="logout" type="button">&#272;&#259;ng xu&#7845;t</button>
               </div>
             </div>
           </div>
 
           <div id="dashboard-home" class="screen">
-            <div class="summary-grid">
-              <div class="summary-card"><span>Nhật ký đang hoạt động</span><strong id="active-count">0</strong></div>
-              <div class="summary-card"><span>Trong thùng rác</span><strong id="trash-count">0</strong></div>
-              <div class="summary-card"><span>Trạng thái mở khóa</span><strong id="key-status">Đã khóa</strong></div>
-            </div>
-            <div class="empty-state">
-              <h3>Không gian viết dành cho bạn</h3>
-              <p>Viết nhật ký, giữ nội dung ở dạng mã hóa và chỉ mở khi bạn chủ động giải mã.</p>
+            <div class="dashboard-home-layout">
+              <div class="dashboard-home-main">
+                <section class="welcome-card">
+                  <h2>Kh&#244;ng gian vi&#7871;t d&#224;nh cho b&#7841;n</h2>
+                  <p>BloomNote gi&#250;p b&#7841;n gi&#7919; nh&#7883;p vi&#7871;t ri&#234;ng t&#432; g&#7885;n g&#224;ng h&#417;n: m&#7903; note nhanh, qu&#7843;n l&#253; tr&#7841;ng th&#225;i m&#227; h&#243;a v&#224; quay l&#7841;i nh&#7919;ng ghi ch&#250; quan tr&#7885;ng b&#7845;t c&#7913; l&#250;c n&#224;o.</p>
+                  <div class="welcome-actions">
+                    <button class="primary-btn" data-screen="notes" type="button">M&#7903; khu nh&#7853;t k&#253;</button>
+                    <button class="secondary-btn" data-screen="shared-notes" type="button">Xem chia s&#7867;</button>
+                  </div>
+                </section>
+
+                <section class="summary-grid">
+                  <div class="summary-card">
+                    <span>Nh&#7853;t k&#253; &#273;ang ho&#7841;t &#273;&#7897;ng</span>
+                    <strong id="active-count">0</strong>
+                  </div>
+                  <div class="summary-card">
+                    <span>Trong th&#249;ng r&#225;c</span>
+                    <strong id="trash-count">0</strong>
+                  </div>
+                  <div class="summary-card">
+                    <span>Tr&#7841;ng th&#225;i m&#7903; kh&#243;a</span>
+                    <strong id="key-status">&#272;&#227; kh&#243;a</strong>
+                  </div>
+                </section>
+
+                <section class="activity-card">
+                  <h3>Nh&#7883;p l&#224;m vi&#7879;c</h3>
+                  <p>M&#7897;t b&#7889; c&#7909;c r&#245; h&#417;n &#273;&#7875; b&#7841;n theo d&#245;i vi&#7871;t, kh&#244;i ph&#7909;c v&#224; chia s&#7867; m&#224; kh&#244;ng b&#7883; r&#7889;i.</p>
+                  <div class="activity-list">
+                    <div class="activity-item">
+                      <span class="activity-dot"></span>
+                      <div>
+                        <strong>T&#7841;o ho&#7863;c m&#7903; note nhanh</strong>
+                        <span>V&#224;o khu nh&#7853;t k&#253; &#273;&#7875; vi&#7871;t, s&#7917;a v&#224; l&#432;u n&#7897;i dung m&#227; h&#243;a.</span>
+                      </div>
+                    </div>
+                    <div class="activity-item">
+                      <span class="activity-dot"></span>
+                      <div>
+                        <strong>Qu&#7843;n l&#253; chia s&#7867; r&#245; r&#224;ng</strong>
+                        <span>Xem note nh&#7853;n t&#7915; ng&#432;&#7901;i kh&#225;c v&#224; nh&#7919;ng g&#236; b&#7841;n &#273;&#227; g&#7917;i &#273;i.</span>
+                      </div>
+                    </div>
+                    <div class="activity-item">
+                      <span class="activity-dot"></span>
+                      <div>
+                        <strong>Theo d&#245;i b&#7843;o m&#7853;t d&#7877; h&#417;n</strong>
+                        <span>Tr&#7841;ng th&#225;i m&#7903; kh&#243;a, OTP v&#224; d&#7919; li&#7879;u trong th&#249;ng r&#225;c &#273;&#432;&#7907;c t&#225;ch khu v&#7921;c r&#245;.</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div class="dashboard-home-side">
+                <section class="status-card">
+                  <h3>G&#7907;i &#253; nhanh</h3>
+                  <p>N&#7871;u b&#7841;n mu&#7889;n b&#7855;t &#273;&#7847;u ngay, &#273;&#226;y l&#224; lu&#7891;ng ng&#7855;n nh&#7845;t.</p>
+                  <ul>
+                    <li>M&#7903; khu nh&#7853;t k&#253; &#273;&#7875; t&#7841;o ghi ch&#250; m&#7899;i.</li>
+                    <li>Nh&#7845;n m&#7903; kh&#243;a khi c&#7847;n xem n&#7897;i dung g&#7889;c.</li>
+                    <li>D&#249;ng khu chia s&#7867; khi mu&#7889;n g&#7917;i note cho ng&#432;&#7901;i kh&#225;c.</li>
+                  </ul>
+                </section>
+
+                <section class="quick-card">
+                  <h3>B&#7843;o m&#7853;t c&#225; nh&#226;n</h3>
+                  <p>V&#224;o th&#244;ng tin c&#225; nh&#226;n &#273;&#7875; c&#7853;p nh&#7853;t hi&#7875;n th&#7883;, kh&#243;a c&#225; nh&#226;n ho&#7863;c m&#7853;t kh&#7849;u khi c&#7847;n.</p>
+                </section>
+              </div>
             </div>
           </div>
 
           <div id="notes" class="screen hidden">
-            <div class="toolbar">
-              <input id="note-search" type="text" placeholder="Tìm theo tiêu đề..." />
-              <button id="unlock-notes" class="secondary-btn" type="button">Mở khóa nhật ký</button>
-            </div>
-            <p id="notes-security-hint" class="security-hint"></p>
-            <div class="notes-layout">
-              <div id="notes-list" class="notes-list"></div>
-              <div class="editor-card">
-                <div class="field"><label>Tiêu đề</label><input id="note-title" type="text" /></div>
-                <div class="editor-toolbar">
-                  <button data-command="bold" type="button"><b>B</b></button>
-                  <button data-command="italic" type="button"><i>I</i></button>
-                  <button data-command="justifyLeft" type="button">Trái</button>
-                  <button data-command="justifyCenter" type="button">Giữa</button>
-                  <button data-command="justifyRight" type="button">Phải</button>
-                </div>
-                <div id="note-editor" class="editor" contenteditable="true"></div>
-                <div class="editor-actions">
-                  <button id="save-note" class="primary-btn" type="button">Lưu nhật ký</button>
-                  <button id="share-note" class="secondary-btn" type="button">Chia sẻ</button>
-                </div>
-                <div id="share-link-panel" class="share-panel hidden">
-                  <div class="field">
-                    <label>Quyền chia sẻ</label>
-                    <select id="share-access-mode">
-                      <option value="view">Chỉ xem</option>
-                      <option value="edit">Cho chỉnh sửa</option>
-                    </select>
+            <div class="editor-card">
+              <div class="toolbar">
+                <input id="note-search" type="text" placeholder="T&#236;m theo ti&#234;u &#273;&#7873;..." />
+                <button id="unlock-notes" class="secondary-btn" type="button">M&#7903; kh&#243;a nh&#7853;t k&#253;</button>
+              </div>
+              <p id="notes-security-hint" class="security-hint"></p>
+              <div class="notes-layout">
+                <div id="notes-list" class="notes-list"></div>
+                <div class="editor-card">
+                  <div class="field"><label>Ti&#234;u &#273;&#7873;</label><input id="note-title" type="text" /></div>
+                  <div class="editor-toolbar">
+                    <button data-command="bold" type="button"><b>B</b></button>
+                    <button data-command="italic" type="button"><i>I</i></button>
+                    <button data-command="justifyLeft" type="button">Tr&#225;i</button>
+                    <button data-command="justifyCenter" type="button">Gi&#7919;a</button>
+                    <button data-command="justifyRight" type="button">Ph&#7843;i</button>
                   </div>
-                  <div id="share-recipient-field" class="field hidden">
-                    <label>Tài khoản người nhận</label>
-                    <input id="share-recipient" type="text" placeholder="Email hoặc tên người dùng" />
+                  <div id="note-editor" class="editor" contenteditable="true"></div>
+                  <div class="editor-actions">
+                    <button id="save-note" class="primary-btn" type="button">L&#432;u nh&#7853;t k&#253;</button>
+                    <button id="share-note" class="secondary-btn" type="button">Chia s&#7867;</button>
                   </div>
-                  <div class="field">
-                    <label>Link chia sẻ</label>
-                    <div class="share-row">
-                      <input id="share-link-output" type="text" readonly />
-                      <button id="copy-share-link" class="secondary-btn" type="button">Sao chép</button>
+                  <div id="share-link-panel" class="share-panel hidden">
+                    <div class="field">
+                      <label>Quy&#7873;n chia s&#7867;</label>
+                      <select id="share-access-mode">
+                        <option value="view">Ch&#7881; xem</option>
+                        <option value="edit">Cho ch&#7881;nh s&#7917;a</option>
+                      </select>
                     </div>
+                    <div id="share-recipient-field" class="field hidden">
+                      <label>T&#224;i kho&#7843;n ng&#432;&#7901;i nh&#7853;n</label>
+                      <input id="share-recipient" type="text" placeholder="Email ho&#7863;c t&#234;n ng&#432;&#7901;i d&#249;ng" />
+                    </div>
+                    <div class="field">
+                      <label>Link chia s&#7867;</label>
+                      <div class="share-row">
+                        <input id="share-link-output" type="text" readonly />
+                        <button id="copy-share-link" class="secondary-btn" type="button">Sao ch&#233;p</button>
+                      </div>
+                    </div>
+                    <p id="share-status" class="security-hint">M&#7895;i l&#7847;n chia s&#7867; c&#7847;n d&#249;ng m&#7897;t kh&#243;a ki&#7875;m th&#7917; m&#7899;i.</p>
                   </div>
-                  <p id="share-status" class="security-hint">Mỗi lần chia sẻ cần dùng một khóa kiểm thử mới.</p>
                 </div>
               </div>
             </div>
@@ -100,15 +176,15 @@
             <div class="shared-grid">
               <section class="shared-column panel-shell">
                 <div class="shared-heading">
-                  <h3>Người khác chia sẻ cho tôi</h3>
-                  <p>Xem, chỉnh sửa hoặc ẩn nhật ký được chia sẻ.</p>
+                  <h3>Ng&#432;&#7901;i kh&#225;c chia s&#7867; cho t&#244;i</h3>
+                  <p>Xem, ch&#7881;nh s&#7917;a ho&#7863;c &#7849;n nh&#7919;ng ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p>
                 </div>
                 <div id="shared-with-me-list" class="notes-list"></div>
               </section>
               <section class="shared-column panel-shell">
                 <div class="shared-heading">
-                  <h3>Tôi đã chia sẻ</h3>
-                  <p>Quản lý quyền xem, quyền sửa và link chia sẻ.</p>
+                  <h3>T&#244;i &#273;&#227; chia s&#7867;</h3>
+                  <p>Qu&#7843;n l&#253; quy&#7873;n xem, quy&#7873;n s&#7917;a v&#224; link chia s&#7867; c&#7911;a b&#7841;n.</p>
                 </div>
                 <div id="shared-by-me-list" class="notes-list"></div>
               </section>
@@ -116,30 +192,30 @@
           </div>
 
           <div id="trash" class="screen hidden">
-            <h3>Thùng rác 30 ngày</h3>
-            <p>Nội dung trong thùng rác vẫn giữ nguyên ở dạng mã hóa trước khi bị xóa vĩnh viễn.</p>
+            <h3>Th&#249;ng r&#225;c 30 ng&#224;y</h3>
+            <p>N&#7897;i dung trong th&#249;ng r&#225;c v&#7851;n &#273;&#432;&#7907;c gi&#7919; m&#227; h&#243;a tr&#432;&#7899;c khi b&#7883; x&#243;a v&#297;nh vi&#7877;n.</p>
             <div id="trash-list" class="notes-list trash-list"></div>
           </div>
 
           <div id="profile" class="screen hidden">
             <div class="profile-grid">
-              <div class="field"><label>Tên hiển thị</label><input id="profile-display-name" type="text" /></div>
-              <div class="field"><label>Tên người dùng</label><input id="profile-username" type="text" readonly /></div>
-              <div class="field"><label>Ngày sinh</label><input id="profile-birth-date" type="date" /></div>
+              <div class="field"><label>T&#234;n hi&#7875;n th&#7883;</label><input id="profile-display-name" type="text" /></div>
+              <div class="field"><label>T&#234;n ng&#432;&#7901;i d&#249;ng</label><input id="profile-username" type="text" readonly /></div>
+              <div class="field"><label>Ng&#224;y sinh</label><input id="profile-birth-date" type="date" /></div>
               <div class="field"><label>Email</label><input id="profile-email" type="email" readonly /></div>
               <div class="field">
-                <label>Giới tính</label>
+                <label>Gi&#7899;i t&#237;nh</label>
                 <select id="profile-gender">
-                  <option value="">Chọn</option>
+                  <option value="">Ch&#7885;n</option>
                   <option value="Nam">Nam</option>
-                  <option value="Nữ">Nữ</option>
-                  <option value="Khác">Khác</option>
+                  <option value="N&#7919;">N&#7919;</option>
+                  <option value="Kh&#225;c">Kh&#225;c</option>
                 </select>
               </div>
             </div>
             <div class="editor-actions">
-              <button id="save-profile" class="primary-btn" type="button">Lưu thông tin</button>
-              <button id="open-security-panel" class="secondary-btn" type="button">Quản lý bảo mật</button>
+              <button id="save-profile" class="primary-btn" type="button">L&#432;u th&#244;ng tin</button>
+              <button id="open-security-panel" class="secondary-btn" type="button">Qu&#7843;n l&#253; b&#7843;o m&#7853;t</button>
             </div>
           </div>
 
@@ -148,25 +224,25 @@
               <div class="shared-note-head">
                 <div>
                   <h3 id="shared-note-title">Shared Note</h3>
-                  <p id="shared-note-key">Nhập khóa kiểm thử để mở ghi chú được chia sẻ.</p>
+                  <p id="shared-note-key">Nh&#7853;p kh&#243;a ki&#7875;m th&#7917; &#273;&#7875; m&#7903; ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p>
                 </div>
                 <div class="shared-note-actions">
-                  <button id="shared-note-unlock" class="secondary-btn" type="button">Mở ghi chú</button>
-                  <button id="shared-note-save" class="primary-btn hidden" type="button">Lưu thay đổi</button>
+                  <button id="shared-note-unlock" class="secondary-btn" type="button">M&#7903; ghi ch&#250;</button>
+                  <button id="shared-note-save" class="primary-btn hidden" type="button">L&#432;u thay &#273;&#7893;i</button>
                 </div>
               </div>
               <div class="field">
-                <label>Khóa kiểm thử</label>
+                <label>Kh&#243;a ki&#7875;m th&#7917;</label>
                 <div class="share-row">
-                  <input id="shared-note-access-key" type="password" placeholder="Nhập khóa được người gửi cung cấp." />
+                  <input id="shared-note-access-key" type="password" placeholder="Nh&#7853;p kh&#243;a &#273;&#432;&#7907;c ng&#432;&#7901;i g&#7917;i cung c&#7845;p." />
                 </div>
               </div>
               <div class="field">
-                <label>Tiêu đề</label>
+                <label>Ti&#234;u &#273;&#7873;</label>
                 <input id="shared-note-title-input" type="text" readonly />
               </div>
               <div class="field">
-                <label>Nội dung</label>
+                <label>N&#7897;i dung</label>
                 <textarea id="shared-note-content" rows="16" readonly></textarea>
               </div>
             </div>
@@ -179,91 +255,91 @@
 
     <div id="profile-access-modal" class="modal-overlay hidden">
       <div class="modal-card">
-        <h3>Mở thông tin cá nhân</h3>
-        <p>Nhập khóa cá nhân để xem hồ sơ. Nếu chưa đổi khóa, mặc định khóa cá nhân là mật khẩu tài khoản lúc tạo.</p>
+        <h3>M&#7903; th&#244;ng tin c&#225; nh&#226;n</h3>
+        <p>Nh&#7853;p kh&#243;a c&#225; nh&#226;n &#273;&#7875; xem h&#7891; s&#417;. N&#7871;u ch&#432;a &#273;&#7893;i kh&#243;a, m&#7863;c &#273;&#7883;nh kh&#243;a c&#225; nh&#226;n l&#224; m&#7853;t kh&#7849;u t&#224;i kho&#7843;n l&#250;c t&#7841;o.</p>
         <div class="field">
-          <label>Khóa cá nhân</label>
-          <input id="profile-access-key" type="password" placeholder="Nhập khóa cá nhân" />
+          <label>Kh&#243;a c&#225; nh&#226;n</label>
+          <input id="profile-access-key" type="password" placeholder="Nh&#7853;p kh&#243;a c&#225; nh&#226;n" />
         </div>
         <div class="modal-actions">
-          <button id="profile-access-submit" class="primary-btn" type="button">Mở hồ sơ</button>
-          <button id="profile-access-forgot" class="secondary-btn" type="button">Quên mật khẩu</button>
-          <button id="profile-access-close" class="text-btn" type="button">Đóng</button>
+          <button id="profile-access-submit" class="primary-btn" type="button">M&#7903; h&#7891; s&#417;</button>
+          <button id="profile-access-forgot" class="secondary-btn" type="button">Qu&#234;n m&#7853;t kh&#7849;u</button>
+          <button id="profile-access-close" class="text-btn" type="button">&#272;&#243;ng</button>
         </div>
       </div>
     </div>
 
     <div id="profile-otp-modal" class="modal-overlay hidden">
       <div class="modal-card">
-        <h3>Xác thực OTP hồ sơ</h3>
-        <p>Nhập OTP đã gửi về email để mở hồ sơ cá nhân.</p>
+        <h3>X&#225;c th&#7921;c OTP h&#7891; s&#417;</h3>
+        <p>Nh&#7853;p OTP &#273;&#227; g&#7917;i v&#7873; email &#273;&#7875; m&#7903; h&#7891; s&#417; c&#225; nh&#226;n.</p>
         <div class="field">
           <label>OTP</label>
-          <input id="profile-access-otp" type="text" maxlength="6" placeholder="Nhập mã OTP" />
+          <input id="profile-access-otp" type="text" maxlength="6" placeholder="Nh&#7853;p m&#227; OTP" />
         </div>
         <div class="modal-actions">
-          <button id="profile-otp-submit" class="primary-btn" type="button">Xác nhận</button>
-          <button id="profile-otp-close" class="text-btn" type="button">Đóng</button>
+          <button id="profile-otp-submit" class="primary-btn" type="button">X&#225;c nh&#7853;n</button>
+          <button id="profile-otp-close" class="text-btn" type="button">&#272;&#243;ng</button>
         </div>
       </div>
     </div>
 
     <div id="recovery-modal" class="modal-overlay hidden">
       <div class="modal-card">
-        <h3>Cấp lại khóa</h3>
-        <p>Nhập OTP đã gửi về email và mật khẩu mới để cấp lại khóa cá nhân.</p>
+        <h3>C&#7845;p l&#7841;i kh&#243;a</h3>
+        <p>Nh&#7853;p OTP &#273;&#227; g&#7917;i v&#7873; email v&#224; m&#7853;t kh&#7849;u m&#7899;i &#273;&#7875; c&#7845;p l&#7841;i kh&#243;a c&#225; nh&#226;n.</p>
         <div class="field">
           <label>OTP</label>
-          <input id="recovery-otp" type="text" maxlength="6" placeholder="Nhập mã OTP" />
+          <input id="recovery-otp" type="text" maxlength="6" placeholder="Nh&#7853;p m&#227; OTP" />
         </div>
         <div class="field">
-          <label>Mật khẩu mới</label>
-          <input id="recovery-new-password" type="password" placeholder="Nhập mật khẩu mới" />
+          <label>M&#7853;t kh&#7849;u m&#7899;i</label>
+          <input id="recovery-new-password" type="password" placeholder="Nh&#7853;p m&#7853;t kh&#7849;u m&#7899;i" />
         </div>
         <div class="modal-actions">
-          <button id="recovery-submit" class="primary-btn" type="button">Xác nhận</button>
-          <button id="recovery-close" class="text-btn" type="button">Đóng</button>
+          <button id="recovery-submit" class="primary-btn" type="button">X&#225;c nh&#7853;n</button>
+          <button id="recovery-close" class="text-btn" type="button">&#272;&#243;ng</button>
         </div>
       </div>
     </div>
 
     <div id="security-modal" class="modal-overlay hidden">
       <div class="modal-card modal-card-wide">
-        <h3>Quản lý bảo mật</h3>
+        <h3>Qu&#7843;n l&#253; b&#7843;o m&#7853;t</h3>
         <div class="security-grid">
           <section class="security-section">
-            <h4>Đổi mật khẩu đăng nhập</h4>
+            <h4>&#272;&#7893;i m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p</h4>
             <div class="field">
-              <label>Mật khẩu mới</label>
+              <label>M&#7853;t kh&#7849;u m&#7899;i</label>
               <input id="security-new-password" type="password" />
             </div>
             <div class="field">
-              <label>OTP xác nhận</label>
+              <label>OTP x&#225;c nh&#7853;n</label>
               <input id="security-password-otp" type="text" maxlength="6" />
             </div>
             <div class="modal-actions">
-              <button id="security-password-request" class="secondary-btn" type="button">Gửi OTP</button>
-              <button id="security-password-confirm" class="primary-btn" type="button">Đổi mật khẩu</button>
+              <button id="security-password-request" class="secondary-btn" type="button">G&#7917;i OTP</button>
+              <button id="security-password-confirm" class="primary-btn" type="button">&#272;&#7893;i m&#7853;t kh&#7849;u</button>
             </div>
           </section>
           <section class="security-section">
-            <h4>Đổi khóa cá nhân</h4>
+            <h4>&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</h4>
             <div class="field">
-              <label>Khóa cá nhân mới</label>
+              <label>Kh&#243;a c&#225; nh&#226;n m&#7899;i</label>
               <input id="profile-new-personal-key" type="password" />
             </div>
             <div class="field">
-              <label>OTP xác nhận</label>
+              <label>OTP x&#225;c nh&#7853;n</label>
               <input id="profile-personal-key-otp" type="text" maxlength="6" />
             </div>
             <div class="modal-actions">
-              <button id="request-personal-key-otp" class="secondary-btn" type="button">Gửi OTP</button>
-              <button id="confirm-personal-key" class="primary-btn" type="button">Đổi khóa cá nhân</button>
+              <button id="request-personal-key-otp" class="secondary-btn" type="button">G&#7917;i OTP</button>
+              <button id="confirm-personal-key" class="primary-btn" type="button">&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</button>
             </div>
           </section>
         </div>
         <div class="modal-actions">
-          <button id="security-close" class="text-btn" type="button">Đóng</button>
+          <button id="security-close" class="text-btn" type="button">&#272;&#243;ng</button>
         </div>
       </div>
     </div>

@@ -34,15 +34,15 @@ const translations = {
   vi: {
     nav: { home: "Trang chủ", intro: "Giới thiệu", about: "Về chúng tôi", login: "Đăng nhập" },
     public: {
-      homeKicker: "BloomNote diary space",
-      homeTitle: "Lưu giữ ký ức như một khu vườn riêng yên tĩnh của bạn.",
-      homeText: "BloomNote giúp bạn viết nhật ký cá nhân trong một giao diện dịu mắt, giữ nội dung ở dạng mã hóa và chỉ mở ra khi chính bạn muốn đọc lại.",
+      homeKicker: "Personal diary space",
+      homeTitle: "BloomNote",
+      homeText: "Không gian nhật ký riêng tư với cảm giác nhẹ nhàng, tập trung và an toàn hơn cho những điều bạn muốn giữ lại.",
       heroAbout: "Khám phá thêm",
       heroLogin: "Mở khu đăng nhập",
       featureHome: "Bạn có thể viết nhật ký mỗi ngày, lưu lại cảm xúc riêng tư và quay lại đọc bằng khóa cá nhân bất cứ khi nào cần.",
       featureEncryption: "Nội dung được mã hóa AES trước khi lưu và sẽ không hiện rõ nếu bạn chưa mở khóa.",
       featureOtp: "Đăng ký bằng OTP email để kích hoạt tài khoản và bảo vệ luồng đăng nhập tốt hơn.",
-      tags: ["Mã hóa AES", "OTP qua email", "Riêng tư từng ghi chú"],
+      tags: ["Mã hóa AES", "OTP qua email", "Nhật ký cá nhân"],
       introKicker: "Giới thiệu",
       introTitle: "Một website nhật ký cá nhân gọn gàng, ấm áp và an toàn.",
       introCards: [
@@ -170,9 +170,9 @@ const translations = {
   en: {
     nav: { home: "Home", intro: "Introduction", about: "About", login: "Login" },
     public: {
-      homeKicker: "BloomNote diary space",
-      homeTitle: "Keep memories in a quiet private garden of your own.",
-      homeText: "BloomNote lets you write personal diaries in a calm interface, keep every entry encrypted, and only open it when you decide to.",
+      homeKicker: "Personal diary space",
+      homeTitle: "BloomNote",
+      homeText: "A private diary space with a calmer atmosphere for writing, keeping, and protecting your personal thoughts.",
       heroAbout: "Explore more",
       heroLogin: "Open login area",
       featureHome: "Write daily reflections, manage private notes, and come back to them anytime with your personal key.",
@@ -482,31 +482,29 @@ function renderMarketingContent() {
     els.navButtons[2].textContent = copy.nav.about;
   }
   if (els.navLogin) els.navLogin.textContent = copy.nav.login;
-  if (els.homeKicker) {
-    els.homeKicker.textContent = copy.public.homeKicker;
-    els.homeTitle.textContent = copy.public.homeTitle;
-    els.homeText.textContent = copy.public.homeText;
-    els.heroAbout.textContent = copy.public.heroAbout;
-    els.heroLogin.textContent = copy.public.heroLogin;
-    els.featureHomeCopy.textContent = copy.public.featureHome;
-    els.featureEncryption.textContent = copy.public.featureEncryption;
-    els.featureOtp.textContent = copy.public.featureOtp;
-    renderTagList(els.heroTags, copy.public.tags);
-    els.introKicker.textContent = copy.public.introKicker;
-    els.introTitle.textContent = copy.public.introTitle;
-    els.introCardTitle1.textContent = copy.public.introCards[0].title;
-    els.introCardText1.textContent = copy.public.introCards[0].text;
-    els.introCardTitle2.textContent = copy.public.introCards[1].title;
-    els.introCardText2.textContent = copy.public.introCards[1].text;
-    els.introCardTitle3.textContent = copy.public.introCards[2].title;
-    els.introCardText3.textContent = copy.public.introCards[2].text;
-    els.aboutKicker.textContent = copy.public.aboutKicker;
-    els.aboutTitle.textContent = copy.public.aboutTitle;
-    els.aboutText.textContent = copy.public.aboutText;
-    els.aboutStat1.textContent = copy.public.aboutStats[0];
-    els.aboutStat2.textContent = copy.public.aboutStats[1];
-    els.aboutStat3.textContent = copy.public.aboutStats[2];
-  }
+  if (els.homeKicker) els.homeKicker.textContent = copy.public.homeKicker;
+  if (els.homeTitle) els.homeTitle.textContent = copy.public.homeTitle;
+  if (els.homeText) els.homeText.textContent = copy.public.homeText;
+  if (els.heroAbout) els.heroAbout.textContent = copy.public.heroAbout;
+  if (els.heroLogin) els.heroLogin.textContent = copy.public.heroLogin;
+  if (els.featureHomeCopy) els.featureHomeCopy.textContent = copy.public.featureHome;
+  if (els.featureEncryption) els.featureEncryption.textContent = copy.public.featureEncryption;
+  if (els.featureOtp) els.featureOtp.textContent = copy.public.featureOtp;
+  if (els.heroTags) renderTagList(els.heroTags, copy.public.tags);
+  if (els.introKicker) els.introKicker.textContent = copy.public.introKicker;
+  if (els.introTitle) els.introTitle.textContent = copy.public.introTitle;
+  if (els.introCardTitle1) els.introCardTitle1.textContent = copy.public.introCards[0].title;
+  if (els.introCardText1) els.introCardText1.textContent = copy.public.introCards[0].text;
+  if (els.introCardTitle2) els.introCardTitle2.textContent = copy.public.introCards[1].title;
+  if (els.introCardText2) els.introCardText2.textContent = copy.public.introCards[1].text;
+  if (els.introCardTitle3) els.introCardTitle3.textContent = copy.public.introCards[2].title;
+  if (els.introCardText3) els.introCardText3.textContent = copy.public.introCards[2].text;
+  if (els.aboutKicker) els.aboutKicker.textContent = copy.public.aboutKicker;
+  if (els.aboutTitle) els.aboutTitle.textContent = copy.public.aboutTitle;
+  if (els.aboutText) els.aboutText.textContent = copy.public.aboutText;
+  if (els.aboutStat1) els.aboutStat1.textContent = copy.public.aboutStats[0];
+  if (els.aboutStat2) els.aboutStat2.textContent = copy.public.aboutStats[1];
+  if (els.aboutStat3) els.aboutStat3.textContent = copy.public.aboutStats[2];
   if (els.authKicker) {
     els.authKicker.textContent = copy.auth.kicker;
     els.authTitle.textContent = copy.auth.title;
@@ -1195,6 +1193,11 @@ function initLoginPage() {
 
 function initDashboardPage() {
   renderMarketingContent();
+  document.querySelectorAll(".welcome-actions [data-screen]").forEach((button) => on(button, "click", async () => {
+    switchScreen(button.dataset.screen);
+    if (button.dataset.screen === "profile") await loadProfile();
+    if (button.dataset.screen === "notes" && !state.selectedNoteId) resetNoteEditorForNewEntry();
+  }));
   on(els.shareAccessMode, "change", () => {
     if (els.shareRecipientField) els.shareRecipientField.classList.toggle("hidden", els.shareAccessMode.value !== "edit");
   });

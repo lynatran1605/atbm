@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BloomNote Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+  </head>
+  <body data-page="login">
+    <div id="app">
+      <header class="topbar">
+        <button id="brand-home" class="brand brand-btn" type="button">BloomNote</button>
+        <nav class="nav-links">
+          <button data-section="home" class="nav-btn" type="button">Trang chủ</button>
+          <button data-section="intro" class="nav-btn" type="button">Giới thiệu</button>
+          <button data-section="about" class="nav-btn" type="button">Về chúng tôi</button>
+          <button id="nav-login" class="nav-btn nav-login active" type="button">Đăng nhập</button>
+          <button id="language-toggle" class="lang-btn" type="button">EN</button>
+        </nav>
+      </header>
+
+      <main class="main-shell auth-page">
+        <div class="auth-hero panel-shell">
+          <p id="auth-kicker" class="section-kicker"></p>
+          <h2 id="auth-title"></h2>
+          <p id="auth-text"></p>
+          <div id="auth-tags" class="hero-tags"></div>
+          <button id="auth-back-home" class="secondary-btn" type="button">Về trang chủ</button>
+        </div>
+
+        <div class="auth-panel">
+          <div id="login-card" class="card panel-shell">
+            <h2 id="login-heading"></h2>
+            <div class="field">
+              <label id="login-identifier-label"></label>
+              <input id="login-identifier" type="text" placeholder="you@example.com" />
+            </div>
+            <div class="field">
+              <label id="login-password-label"></label>
+              <div class="password-wrap">
+                <input id="login-password" type="password" placeholder="********" />
+                <button id="toggle-password" class="ghost-btn" type="button">Hiện</button>
+              </div>
+            </div>
+            <button id="login-submit" class="primary-btn" type="button"></button>
+            <button id="forgot-password" class="text-btn" type="button"></button>
+            <p><span id="register-prompt"></span> <button id="go-register" class="text-btn inline-btn" type="button"></button></p>
+          </div>
+
+          <div id="register-card" class="card panel-shell hidden">
+            <h2 id="register-heading"></h2>
+            <div class="field">
+              <label id="register-username-label"></label>
+              <input id="register-username" type="text" />
+            </div>
+            <div class="field">
+              <label id="register-email-label"></label>
+              <input id="register-email" type="email" />
+            </div>
+            <div class="field">
+              <label id="register-password-label"></label>
+              <input id="register-password" type="password" />
+            </div>
+            <button id="register-submit" class="primary-btn" type="button"></button>
+            <p><span id="login-prompt"></span> <button id="go-login" class="text-btn inline-btn" type="button"></button></p>
+          </div>
+
+          <div id="otp-card" class="card panel-shell hidden">
+            <h2 id="otp-heading"></h2>
+            <p id="otp-text"></p>
+            <div class="field">
+              <label>OTP</label>
+              <input id="otp-code" type="text" maxlength="6" />
+            </div>
+            <div id="otp-new-password-field" class="field hidden">
+              <label id="otp-new-password-label">Mật khẩu mới</label>
+              <input id="otp-new-password" type="password" />
+            </div>
+            <div class="modal-actions">
+              <button id="otp-resend" class="secondary-btn" type="button">Gửi lại OTP</button>
+              <button id="otp-submit" class="primary-btn" type="button"></button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

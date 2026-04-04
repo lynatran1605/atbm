@@ -56,13 +56,28 @@ app.use("/api/notes/shared", createSharedNotesRoutes({ db }));
 app.use("/api/notes", authMiddleware, createNotesRoutes({ db }));
 app.use("/api/user", authMiddleware, createUserRoutes({ db }));
 
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: "API route not found." });
+});
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(frontendDir, "index.html"));
+});
+
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(frontendDir, "login.html"));
+});
+
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(frontendDir, "dashboard.html"));
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(frontendDir, "index.html"));
 });
 
 function startLocalServer() {
   if (!hasHttpsCertificates) {
-    console.warn(`HTTPS certificates not found. Starting with HTTP at ${defaultBaseUrl}.`);
     const server = app.listen(PORT, () => {
       console.log(`Server ready at ${defaultBaseUrl}`);
     });

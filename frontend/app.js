@@ -1,17 +1,34 @@
-﻿
+const page = document.body.dataset.page || "home";
+const byId = (id) => document.getElementById(id);
+const on = (el, eventName, handler) => el && el.addEventListener(eventName, handler);
+
 const state = {
-  language: "vi",
+  language: localStorage.getItem("diaryLanguage") || "vi",
   currentScreen: "dashboard-home",
   token: localStorage.getItem("diaryToken") || "",
   user: JSON.parse(localStorage.getItem("diaryUser") || "null"),
   notes: [],
   trash: [],
+  sharedByMe: [],
+  sharedWithMe: [],
   selectedNoteId: null,
-  pendingId: "",
+  selectedSharedNoteId: "",
+  pendingId: sessionStorage.getItem("pendingId") || "",
+  authFlow: sessionStorage.getItem("authFlow") || "register",
+  forgotPasswordRequestId: sessionStorage.getItem("forgotPasswordRequestId") || "",
+  recoveryRequestId: sessionStorage.getItem("recoveryRequestId") || "",
   tempPassword: sessionStorage.getItem("tempPassword") || "",
   personalKey: sessionStorage.getItem("personalKey") || "",
   notesUnlocked: false,
+  personalKeyRequestId: "",
+  profileAccessRequestId: "",
+  passwordRequestId: "",
+  profileAccessUnlocked: false,
+  sharedPayload: null,
+  hasAuthenticatedInSession: sessionStorage.getItem("diaryAuthenticatedThisSession") === "true",
 };
+
+if (!window.CryptoJS) throw new Error("CryptoJS failed to load. Check your internet connection or CDN access.");
 
 const translations = {
   vi: {
@@ -63,7 +80,11 @@ const translations = {
       goLogin: "Đăng nhập",
       otpHeading: "Xác thực OTP",
       otpText: "Nhập mã OTP đã được gửi về email của bạn.",
+      forgotOtpHeading: "Xác thực OTP đặt lại mật khẩu",
+      forgotOtpText: "Nhập OTP từ email, sau đó chọn mật khẩu mới.",
+      forgotNewPasswordLabel: "Mật khẩu mới",
       otpSubmit: "Xác nhận",
+      otpResend: "Gửi lại OTP",
       tags: ["Trang riêng cho đăng nhập", "Giữ cảm giác landing page", "Liền mạch với trang chủ"],
       toggleShow: "Hiện",
       toggleHide: "Ẩn",
@@ -72,6 +93,7 @@ const translations = {
       screens: {
         "dashboard-home": ["Tổng quan", "Quản lý nhật ký an toàn và riêng tư."],
         notes: ["Nhật ký", "Danh sách giữ nội dung ở dạng mã hóa cho đến khi bạn mở khóa."],
+        "shared-notes": ["Nhật ký được chia sẻ", "Quản lý quyền xem, quyền sửa và các nhật ký người khác gửi cho bạn."],
         trash: ["Thùng rác", "Nhật ký đã xóa vẫn được giữ mã hóa trước khi bị xóa hẳn."],
         profile: ["Thông tin cá nhân", "Cập nhật hồ sơ và khóa cá nhân dùng để giải mã."],
         "share-view": ["Ghi chú được chia sẻ", "Xem bản ghi mã hóa mà bạn đã gửi đi."],
@@ -86,7 +108,6 @@ const translations = {
       unlockedBadge: "Đã giải mã",
       emptyNotes: "Chưa có nhật ký nào ở đây.",
       emptyTrash: "Thùng rác đang trống.",
-      newNotePlaceholder: "Nhật ký mới sẽ được mã hóa ngay khi bạn lưu.",
       openLabel: "Mở",
       deleteLabel: "Xóa",
       restoreLabel: "Khôi phục",
@@ -94,7 +115,11 @@ const translations = {
     toasts: {
       loginSuccess: "Đăng nhập thành công.",
       registerOtp: "OTP đã được gửi về email.",
+      resendOtp: "Đã gửi lại OTP.",
       registerSuccess: "Đăng ký thành công. Vui lòng đăng nhập.",
+      forgotOtpSent: "OTP đặt lại mật khẩu đã được gửi về email.",
+      forgotSuccess: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập.",
+      needForgotPassword: "Bạn cần nhập mật khẩu mới.",
       movedToTrash: "Đã chuyển nhật ký vào thùng rác.",
       restored: "Đã khôi phục nhật ký.",
       saved: "Đã lưu nhật ký dưới dạng mã hóa.",
@@ -105,14 +130,41 @@ const translations = {
       needKey: "Cần nhập khóa cá nhân hoặc đăng nhập lại để mã hóa nội dung.",
       needUnlock: "Hãy mở khóa nhật ký trước khi xem hoặc chỉnh sửa nội dung cũ.",
       shareCreated: "Đã tạo link chia sẻ và copy thông tin.",
+      shareRemoved: "Đã xóa nhật ký chia sẻ khỏi danh sách của bạn.",
+      shareUpdated: "Đã cập nhật quyền chia sẻ.",
+      shareSaved: "Đã lưu thay đổi trên nhật ký được chia sẻ.",
+      needRecipient: "Bạn cần nhập tài khoản người nhận khi cho phép chỉnh sửa.",
       switchAccount: "Hãy đăng nhập tài khoản khác.",
       logout: "Đã đăng xuất.",
       sharedLoadError: "Không tải được ghi chú chia sẻ.",
       noNoteToShare: "Hãy mở một nhật ký trước khi chia sẻ.",
       keyPrompt: "Nhập khóa cá nhân để giải mã nhật ký:",
-      sharePrompt: "Nhập khóa kiểm thử để gửi kèm (có thể để trống):",
+      sharePrompt: "Nhập khóa kiểm thử để gửi kèm:",
       forgotPrompt: "Nhập email tài khoản:",
+      forgotNewPasswordPrompt: "Nhập mật khẩu mới:",
       unlockRequiredForExisting: "Nhật ký cũ đang được giữ ở dạng mã hóa. Mở khóa trước để xem nội dung thật.",
+      invalidKey: "Khóa cá nhân không đúng.",
+      personalKeyOtpSent: "OTP đổi khóa cá nhân đã được gửi về email.",
+      personalKeyUpdated: "Đã đổi khóa cá nhân và mã hóa lại note thành công.",
+      needNewPersonalKey: "Bạn cần nhập khóa cá nhân mới.",
+      needOtp: "Bạn cần nhập OTP xác nhận đổi khóa.",
+      needUnlockBeforeChange: "Hãy mở khóa toàn bộ note hiện tại trước khi đổi khóa cá nhân.",
+      needUnlockBeforePasswordChange: "Hãy mở khóa toàn bộ note hiện tại trước khi đổi mật khẩu.",
+      passwordChangeReencryptFailed: "Không thể đồng bộ note sang mật khẩu mới. Hãy mở khóa lại note hiện tại và thử lại.",
+      sharedUnlockFailed: "Khóa kiểm thử không đúng hoặc nội dung không thể giải mã.",
+      sharedUnlockSuccess: "Đã mở ghi chú được chia sẻ.",
+      shareInfo: "Mỗi lần chia sẻ sẽ tạo một link mới và yêu cầu một khóa kiểm thử mới.",
+      encryptedTitle: "Ghi chú đang mã hóa",
+      searchPlaceholder: "Tìm theo tiêu đề sau khi mở khóa...",
+      needProfileKey: "Bạn cần nhập khóa cá nhân để mở hồ sơ.",
+      profileAccessOtpSent: "OTP mở hồ sơ đã được gửi về email.",
+      profileAccessGranted: "Đã mở trang thông tin cá nhân.",
+      recoveryOtpSent: "OTP cấp lại khóa đã được gửi về email.",
+      recoverySuccess: "Đã cấp lại khóa và đổi mật khẩu mới thành công.",
+      passwordOtpSent: "OTP đổi mật khẩu đã được gửi về email.",
+      passwordUpdated: "Đã đổi mật khẩu đăng nhập thành công.",
+      needPasswordFields: "Bạn cần nhập mật khẩu mới và OTP.",
+      apiJsonError: "API trả về dữ liệu không hợp lệ. Vui lòng thử lại.",
     },
   },
   en: {
@@ -164,7 +216,11 @@ const translations = {
       goLogin: "Login",
       otpHeading: "OTP verification",
       otpText: "Enter the OTP that was sent to your email.",
+      forgotOtpHeading: "Reset password OTP",
+      forgotOtpText: "Enter the OTP from your email, then choose a new password.",
+      forgotNewPasswordLabel: "New password",
       otpSubmit: "Confirm",
+      otpResend: "Resend OTP",
       tags: ["Dedicated login view", "Keeps landing-page vibe", "Smooth product flow"],
       toggleShow: "Show",
       toggleHide: "Hide",
@@ -173,6 +229,7 @@ const translations = {
       screens: {
         "dashboard-home": ["Overview", "Manage your diary in a private and secure way."],
         notes: ["Diary", "Entries stay encrypted until you choose to unlock them."],
+        "shared-notes": ["Shared diary", "Manage access permissions and notes shared with you."],
         trash: ["Trash", "Deleted entries remain encrypted before permanent cleanup."],
         profile: ["Profile", "Update your profile and personal decryption key."],
         "share-view": ["Shared note", "View the encrypted note you shared."],
@@ -187,7 +244,6 @@ const translations = {
       unlockedBadge: "Decrypted",
       emptyNotes: "No diary entries yet.",
       emptyTrash: "Trash is empty.",
-      newNotePlaceholder: "A new entry will be encrypted the moment you save it.",
       openLabel: "Open",
       deleteLabel: "Delete",
       restoreLabel: "Restore",
@@ -195,7 +251,11 @@ const translations = {
     toasts: {
       loginSuccess: "Logged in successfully.",
       registerOtp: "OTP sent to your email.",
+      resendOtp: "OTP resent successfully.",
       registerSuccess: "Registration complete. Please log in.",
+      forgotOtpSent: "The password reset OTP has been sent to your email.",
+      forgotSuccess: "Password reset successfully. Please log in.",
+      needForgotPassword: "You need to enter a new password.",
       movedToTrash: "Moved the entry to trash.",
       restored: "Restored the entry.",
       saved: "Saved the diary entry in encrypted form.",
@@ -206,248 +266,1051 @@ const translations = {
       needKey: "A personal key or a fresh login is required to encrypt content.",
       needUnlock: "Unlock the diary before viewing or editing older entries.",
       shareCreated: "Share link created and copied.",
+      shareRemoved: "The shared note was removed from your list.",
+      shareUpdated: "Share access updated.",
+      shareSaved: "Shared note changes saved.",
+      needRecipient: "A recipient account is required for edit access.",
       switchAccount: "Please sign in to a different account.",
       logout: "Logged out.",
       sharedLoadError: "Unable to load the shared note.",
       noNoteToShare: "Open a diary entry before sharing it.",
       keyPrompt: "Enter your personal key to decrypt diary entries:",
-      sharePrompt: "Enter an optional test key to include:",
+      sharePrompt: "Enter the test key to include:",
       forgotPrompt: "Enter your account email:",
+      forgotNewPasswordPrompt: "Enter your new password:",
       unlockRequiredForExisting: "Existing diary entries remain encrypted until you unlock them.",
+      invalidKey: "The personal key is incorrect.",
+      personalKeyOtpSent: "The personal key OTP has been sent to your email.",
+      personalKeyUpdated: "The personal key was updated and notes were re-encrypted successfully.",
+      needNewPersonalKey: "You need to enter a new personal key.",
+      needOtp: "You need to enter the OTP confirmation code.",
+      needUnlockBeforeChange: "Unlock your current notes before changing the personal key.",
+      needUnlockBeforePasswordChange: "Unlock your current notes before changing the password.",
+      passwordChangeReencryptFailed: "Current notes could not be synced to the new password. Unlock them again and try once more.",
+      sharedUnlockFailed: "The test key is incorrect or the content could not be decrypted.",
+      sharedUnlockSuccess: "The shared note has been unlocked.",
+      shareInfo: "Each share generates a new link and requires a new test key.",
+      encryptedTitle: "Encrypted note",
+      searchPlaceholder: "Search titles after unlocking...",
+      needProfileKey: "You need to enter the personal key to open the profile.",
+      profileAccessOtpSent: "The profile access OTP has been sent to your email.",
+      profileAccessGranted: "The profile page is now unlocked.",
+      recoveryOtpSent: "The recovery OTP has been sent to your email.",
+      recoverySuccess: "Your key was reissued and password updated successfully.",
+      passwordOtpSent: "The password change OTP has been sent to your email.",
+      passwordUpdated: "The login password has been updated successfully.",
+      needPasswordFields: "Enter the new password and OTP.",
+      apiJsonError: "The API returned an invalid response. Please try again.",
     },
   },
 };
 
 const els = {
-  publicView: document.getElementById("public-view"), authView: document.getElementById("auth-view"), dashboardView: document.getElementById("dashboard-view"),
-  navButtons: document.querySelectorAll(".nav-btn[data-section]"), navLogin: document.getElementById("nav-login"), languageToggle: document.getElementById("language-toggle"),
-  brandHome: document.getElementById("brand-home"), heroAbout: document.getElementById("hero-about"), heroLogin: document.getElementById("hero-login"), authBackHome: document.getElementById("auth-back-home"),
-  homeKicker: document.getElementById("home-kicker"), homeTitle: document.getElementById("home-title"), homeText: document.getElementById("home-text"), heroTags: document.getElementById("hero-tags"),
-  featureHomeCopy: document.getElementById("feature-home-copy"), featureEncryption: document.getElementById("feature-encryption"), featureOtp: document.getElementById("feature-otp"),
-  introKicker: document.getElementById("intro-kicker"), introTitle: document.getElementById("intro-title"), introCardTitle1: document.getElementById("intro-card-title-1"), introCardText1: document.getElementById("intro-card-text-1"),
-  introCardTitle2: document.getElementById("intro-card-title-2"), introCardText2: document.getElementById("intro-card-text-2"), introCardTitle3: document.getElementById("intro-card-title-3"), introCardText3: document.getElementById("intro-card-text-3"),
-  aboutKicker: document.getElementById("about-kicker"), aboutTitle: document.getElementById("about-title"), aboutText: document.getElementById("about-text"), aboutStat1: document.getElementById("about-stat-1"), aboutStat2: document.getElementById("about-stat-2"), aboutStat3: document.getElementById("about-stat-3"),
-  authKicker: document.getElementById("auth-kicker"), authTitle: document.getElementById("auth-title"), authText: document.getElementById("auth-text"), authTags: document.getElementById("auth-tags"),
-  loginCard: document.getElementById("login-card"), registerCard: document.getElementById("register-card"), otpCard: document.getElementById("otp-card"), loginHeading: document.getElementById("login-heading"),
-  loginIdentifierLabel: document.getElementById("login-identifier-label"), loginPasswordLabel: document.getElementById("login-password-label"), loginIdentifier: document.getElementById("login-identifier"), loginPassword: document.getElementById("login-password"), togglePassword: document.getElementById("toggle-password"),
-  loginSubmit: document.getElementById("login-submit"), forgotPassword: document.getElementById("forgot-password"), registerPrompt: document.getElementById("register-prompt"), goRegister: document.getElementById("go-register"),
-  registerHeading: document.getElementById("register-heading"), registerUsernameLabel: document.getElementById("register-username-label"), registerEmailLabel: document.getElementById("register-email-label"), registerPasswordLabel: document.getElementById("register-password-label"), registerUsername: document.getElementById("register-username"), registerEmail: document.getElementById("register-email"), registerPassword: document.getElementById("register-password"), registerSubmit: document.getElementById("register-submit"),
-  loginPrompt: document.getElementById("login-prompt"), goLogin: document.getElementById("go-login"), otpHeading: document.getElementById("otp-heading"), otpText: document.getElementById("otp-text"), otpCode: document.getElementById("otp-code"), otpSubmit: document.getElementById("otp-submit"),
-  sideButtons: document.querySelectorAll(".side-btn"), screenTitle: document.getElementById("screen-title"), screenSubtitle: document.getElementById("screen-subtitle"), userDropdownTrigger: document.getElementById("user-dropdown-trigger"), userDropdown: document.getElementById("user-dropdown"), dropdownActions: document.querySelectorAll("[data-profile-action]"), screens: document.querySelectorAll(".screen"),
-  activeCount: document.getElementById("active-count"), trashCount: document.getElementById("trash-count"), keyStatus: document.getElementById("key-status"), noteSearch: document.getElementById("note-search"), unlockNotes: document.getElementById("unlock-notes"), notesSecurityHint: document.getElementById("notes-security-hint"),
-  notesList: document.getElementById("notes-list"), trashList: document.getElementById("trash-list"), noteTitle: document.getElementById("note-title"), noteEditor: document.getElementById("note-editor"), saveNote: document.getElementById("save-note"), shareNote: document.getElementById("share-note"), fab: document.getElementById("create-note-fab"),
-  profileDisplayName: document.getElementById("profile-display-name"), profileBirthDate: document.getElementById("profile-birth-date"), profileEmail: document.getElementById("profile-email"), profileGender: document.getElementById("profile-gender"), profilePersonalKey: document.getElementById("profile-personal-key"), saveProfile: document.getElementById("save-profile"),
-  toast: document.getElementById("toast"), sharedNoteTitle: document.getElementById("shared-note-title"), sharedNoteKey: document.getElementById("shared-note-key"), sharedNoteContent: document.getElementById("shared-note-content"),
+  navButtons: Array.from(document.querySelectorAll(".nav-btn[data-section]")),
+  brandHome: byId("brand-home"),
+  navLogin: byId("nav-login"),
+  languageToggle: byId("language-toggle"),
+  heroAbout: byId("hero-about"),
+  heroLogin: byId("hero-login"),
+  authBackHome: byId("auth-back-home"),
+  homeKicker: byId("home-kicker"),
+  homeTitle: byId("home-title"),
+  homeText: byId("home-text"),
+  heroTags: byId("hero-tags"),
+  featureHomeCopy: byId("feature-home-copy"),
+  featureEncryption: byId("feature-encryption"),
+  featureOtp: byId("feature-otp"),
+  introKicker: byId("intro-kicker"),
+  introTitle: byId("intro-title"),
+  introCardTitle1: byId("intro-card-title-1"),
+  introCardText1: byId("intro-card-text-1"),
+  introCardTitle2: byId("intro-card-title-2"),
+  introCardText2: byId("intro-card-text-2"),
+  introCardTitle3: byId("intro-card-title-3"),
+  introCardText3: byId("intro-card-text-3"),
+  aboutKicker: byId("about-kicker"),
+  aboutTitle: byId("about-title"),
+  aboutText: byId("about-text"),
+  aboutStat1: byId("about-stat-1"),
+  aboutStat2: byId("about-stat-2"),
+  aboutStat3: byId("about-stat-3"),
+  authKicker: byId("auth-kicker"),
+  authTitle: byId("auth-title"),
+  authText: byId("auth-text"),
+  authTags: byId("auth-tags"),
+  loginCard: byId("login-card"),
+  registerCard: byId("register-card"),
+  otpCard: byId("otp-card"),
+  loginHeading: byId("login-heading"),
+  loginIdentifierLabel: byId("login-identifier-label"),
+  loginPasswordLabel: byId("login-password-label"),
+  loginIdentifier: byId("login-identifier"),
+  loginPassword: byId("login-password"),
+  togglePassword: byId("toggle-password"),
+  loginSubmit: byId("login-submit"),
+  forgotPassword: byId("forgot-password"),
+  registerPrompt: byId("register-prompt"),
+  goRegister: byId("go-register"),
+  registerHeading: byId("register-heading"),
+  registerUsernameLabel: byId("register-username-label"),
+  registerEmailLabel: byId("register-email-label"),
+  registerPasswordLabel: byId("register-password-label"),
+  registerUsername: byId("register-username"),
+  registerEmail: byId("register-email"),
+  registerPassword: byId("register-password"),
+  registerSubmit: byId("register-submit"),
+  loginPrompt: byId("login-prompt"),
+  goLogin: byId("go-login"),
+  otpHeading: byId("otp-heading"),
+  otpText: byId("otp-text"),
+  otpCode: byId("otp-code"),
+  otpNewPasswordField: byId("otp-new-password-field"),
+  otpNewPasswordLabel: byId("otp-new-password-label"),
+  otpNewPassword: byId("otp-new-password"),
+  otpResend: byId("otp-resend"),
+  otpSubmit: byId("otp-submit"),
+  sideButtons: Array.from(document.querySelectorAll(".side-btn")),
+  screens: Array.from(document.querySelectorAll(".screen")),
+  screenTitle: byId("screen-title"),
+  screenSubtitle: byId("screen-subtitle"),
+  userDropdownTrigger: byId("user-dropdown-trigger"),
+  userDropdown: byId("user-dropdown"),
+  dropdownActions: Array.from(document.querySelectorAll("[data-profile-action]")),
+  activeCount: byId("active-count"),
+  trashCount: byId("trash-count"),
+  keyStatus: byId("key-status"),
+  noteSearch: byId("note-search"),
+  unlockNotes: byId("unlock-notes"),
+  notesSecurityHint: byId("notes-security-hint"),
+  notesList: byId("notes-list"),
+  trashList: byId("trash-list"),
+  noteTitle: byId("note-title"),
+  noteEditor: byId("note-editor"),
+  saveNote: byId("save-note"),
+  shareNote: byId("share-note"),
+  fab: byId("create-note-fab"),
+  shareLinkPanel: byId("share-link-panel"),
+  shareAccessMode: byId("share-access-mode"),
+  shareRecipientField: byId("share-recipient-field"),
+  shareRecipient: byId("share-recipient"),
+  shareLinkOutput: byId("share-link-output"),
+  copyShareLink: byId("copy-share-link"),
+  shareStatus: byId("share-status"),
+  sharedWithMeList: byId("shared-with-me-list"),
+  sharedByMeList: byId("shared-by-me-list"),
+  profileDisplayName: byId("profile-display-name"),
+  profileUsername: byId("profile-username"),
+  profileBirthDate: byId("profile-birth-date"),
+  profileEmail: byId("profile-email"),
+  profileGender: byId("profile-gender"),
+  profileNewPersonalKey: byId("profile-new-personal-key"),
+  profilePersonalKeyOtp: byId("profile-personal-key-otp"),
+  saveProfile: byId("save-profile"),
+  openSecurityPanel: byId("open-security-panel"),
+  requestPersonalKeyOtp: byId("request-personal-key-otp"),
+  confirmPersonalKey: byId("confirm-personal-key"),
+  profileAccessModal: byId("profile-access-modal"),
+  profileAccessKey: byId("profile-access-key"),
+  profileAccessSubmit: byId("profile-access-submit"),
+  profileAccessForgot: byId("profile-access-forgot"),
+  profileAccessClose: byId("profile-access-close"),
+  profileOtpModal: byId("profile-otp-modal"),
+  profileAccessOtp: byId("profile-access-otp"),
+  profileOtpSubmit: byId("profile-otp-submit"),
+  profileOtpClose: byId("profile-otp-close"),
+  recoveryModal: byId("recovery-modal"),
+  recoveryOtp: byId("recovery-otp"),
+  recoveryNewPassword: byId("recovery-new-password"),
+  recoverySubmit: byId("recovery-submit"),
+  recoveryClose: byId("recovery-close"),
+  securityModal: byId("security-modal"),
+  securityCurrentPassword: byId("security-current-password"),
+  securityNewPassword: byId("security-new-password"),
+  securityPasswordOtp: byId("security-password-otp"),
+  securityPasswordRequest: byId("security-password-request"),
+  securityPasswordConfirm: byId("security-password-confirm"),
+  securityClose: byId("security-close"),
+  toast: byId("toast"),
+  sharedNoteTitle: byId("shared-note-title"),
+  sharedNoteTitleInput: byId("shared-note-title-input"),
+  sharedNoteKey: byId("shared-note-key"),
+  sharedNoteAccessKey: byId("shared-note-access-key"),
+  sharedNoteUnlock: byId("shared-note-unlock"),
+  sharedNoteSave: byId("shared-note-save"),
+  sharedNoteContent: byId("shared-note-content"),
 };
 
 function t() { return translations[state.language]; }
-function showToast(message) { els.toast.textContent = message; els.toast.classList.remove("hidden"); setTimeout(() => els.toast.classList.add("hidden"), 2500); }
-function escapeHtml(value = "") { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
-function renderTagList(container, items) { container.innerHTML = items.map((item) => `<span>${escapeHtml(item)}</span>`).join(""); }
+function escapeHtml(value = "") { return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
+function showToast(message) {
+  if (!els.toast) return;
+  els.toast.textContent = message;
+  els.toast.classList.remove("hidden");
+  setTimeout(() => els.toast && els.toast.classList.add("hidden"), 2500);
+}
+function renderTagList(container, items) { if (container) container.innerHTML = items.map((item) => `<span>${escapeHtml(item)}</span>`).join(""); }
+function goToHome(section = "") { window.location.href = `/index.html${section ? `#${section}` : ""}`; }
+function goToLogin() { window.location.href = "/login.html"; }
+function goToDashboard(hash = "") { window.location.href = `/dashboard.html${hash}`; }
+
+function renderOtpCardContent() {
+  if (!els.otpHeading || !els.otpText) return;
+  const copy = t().auth;
+  const forgot = state.authFlow === "forgot";
+  els.otpHeading.textContent = forgot ? copy.forgotOtpHeading : copy.otpHeading;
+  els.otpText.textContent = forgot ? copy.forgotOtpText : copy.otpText;
+  if (els.otpResend) {
+    els.otpResend.textContent = copy.otpResend;
+    els.otpResend.classList.toggle("hidden", forgot);
+  }
+  if (els.otpNewPasswordField) els.otpNewPasswordField.classList.toggle("hidden", !forgot);
+  if (els.otpNewPasswordLabel) els.otpNewPasswordLabel.textContent = copy.forgotNewPasswordLabel;
+  if (els.otpNewPassword) {
+    if (!forgot) els.otpNewPassword.value = "";
+    els.otpNewPassword.required = forgot;
+  }
+}
 
 function renderMarketingContent() {
   const copy = t();
   document.documentElement.lang = state.language;
-  els.languageToggle.textContent = state.language === "vi" ? "EN" : "VN";
-  els.navButtons[0].textContent = copy.nav.home; els.navButtons[1].textContent = copy.nav.intro; els.navButtons[2].textContent = copy.nav.about; els.navLogin.textContent = copy.nav.login;
-  els.homeKicker.textContent = copy.public.homeKicker; els.homeTitle.textContent = copy.public.homeTitle; els.homeText.textContent = copy.public.homeText; els.heroAbout.textContent = copy.public.heroAbout; els.heroLogin.textContent = copy.public.heroLogin;
-  els.featureHomeCopy.textContent = copy.public.featureHome; els.featureEncryption.textContent = copy.public.featureEncryption; els.featureOtp.textContent = copy.public.featureOtp; renderTagList(els.heroTags, copy.public.tags);
-  els.introKicker.textContent = copy.public.introKicker; els.introTitle.textContent = copy.public.introTitle; els.introCardTitle1.textContent = copy.public.introCards[0].title; els.introCardText1.textContent = copy.public.introCards[0].text; els.introCardTitle2.textContent = copy.public.introCards[1].title; els.introCardText2.textContent = copy.public.introCards[1].text; els.introCardTitle3.textContent = copy.public.introCards[2].title; els.introCardText3.textContent = copy.public.introCards[2].text;
-  els.aboutKicker.textContent = copy.public.aboutKicker; els.aboutTitle.textContent = copy.public.aboutTitle; els.aboutText.textContent = copy.public.aboutText; els.aboutStat1.textContent = copy.public.aboutStats[0]; els.aboutStat2.textContent = copy.public.aboutStats[1]; els.aboutStat3.textContent = copy.public.aboutStats[2];
-  els.authKicker.textContent = copy.auth.kicker; els.authTitle.textContent = copy.auth.title; els.authText.textContent = copy.auth.text; els.authBackHome.textContent = copy.auth.backHome; renderTagList(els.authTags, copy.auth.tags);
-  els.loginHeading.textContent = copy.auth.loginHeading; els.loginIdentifierLabel.textContent = copy.auth.loginIdentifierLabel; els.loginPasswordLabel.textContent = copy.auth.loginPasswordLabel; els.loginSubmit.textContent = copy.auth.loginSubmit; els.forgotPassword.textContent = copy.auth.forgotPassword; els.registerPrompt.textContent = copy.auth.registerPrompt; els.goRegister.textContent = copy.auth.goRegister; els.registerHeading.textContent = copy.auth.registerHeading; els.registerUsernameLabel.textContent = copy.auth.registerUsernameLabel; els.registerEmailLabel.textContent = copy.auth.registerEmailLabel; els.registerPasswordLabel.textContent = copy.auth.registerPasswordLabel; els.registerSubmit.textContent = copy.auth.registerSubmit; els.loginPrompt.textContent = copy.auth.loginPrompt; els.goLogin.textContent = copy.auth.goLogin; els.otpHeading.textContent = copy.auth.otpHeading; els.otpText.textContent = copy.auth.otpText; els.otpSubmit.textContent = copy.auth.otpSubmit; els.togglePassword.textContent = copy.auth.toggleShow;
-  renderDashboardStats(); updateUnlockStateUI(); switchScreen(state.currentScreen);
+  localStorage.setItem("diaryLanguage", state.language);
+  if (els.languageToggle) els.languageToggle.textContent = state.language === "vi" ? "EN" : "VN";
+  if (els.navButtons.length >= 3) {
+    els.navButtons[0].textContent = copy.nav.home;
+    els.navButtons[1].textContent = copy.nav.intro;
+    els.navButtons[2].textContent = copy.nav.about;
+  }
+  if (els.navLogin) els.navLogin.textContent = copy.nav.login;
+  if (els.homeKicker) {
+    els.homeKicker.textContent = copy.public.homeKicker;
+    els.homeTitle.textContent = copy.public.homeTitle;
+    els.homeText.textContent = copy.public.homeText;
+    els.heroAbout.textContent = copy.public.heroAbout;
+    els.heroLogin.textContent = copy.public.heroLogin;
+    els.featureHomeCopy.textContent = copy.public.featureHome;
+    els.featureEncryption.textContent = copy.public.featureEncryption;
+    els.featureOtp.textContent = copy.public.featureOtp;
+    renderTagList(els.heroTags, copy.public.tags);
+    els.introKicker.textContent = copy.public.introKicker;
+    els.introTitle.textContent = copy.public.introTitle;
+    els.introCardTitle1.textContent = copy.public.introCards[0].title;
+    els.introCardText1.textContent = copy.public.introCards[0].text;
+    els.introCardTitle2.textContent = copy.public.introCards[1].title;
+    els.introCardText2.textContent = copy.public.introCards[1].text;
+    els.introCardTitle3.textContent = copy.public.introCards[2].title;
+    els.introCardText3.textContent = copy.public.introCards[2].text;
+    els.aboutKicker.textContent = copy.public.aboutKicker;
+    els.aboutTitle.textContent = copy.public.aboutTitle;
+    els.aboutText.textContent = copy.public.aboutText;
+    els.aboutStat1.textContent = copy.public.aboutStats[0];
+    els.aboutStat2.textContent = copy.public.aboutStats[1];
+    els.aboutStat3.textContent = copy.public.aboutStats[2];
+  }
+  if (els.authKicker) {
+    els.authKicker.textContent = copy.auth.kicker;
+    els.authTitle.textContent = copy.auth.title;
+    els.authText.textContent = copy.auth.text;
+    els.authBackHome.textContent = copy.auth.backHome;
+    renderTagList(els.authTags, copy.auth.tags);
+    els.loginHeading.textContent = copy.auth.loginHeading;
+    els.loginIdentifierLabel.textContent = copy.auth.loginIdentifierLabel;
+    els.loginPasswordLabel.textContent = copy.auth.loginPasswordLabel;
+    els.loginSubmit.textContent = copy.auth.loginSubmit;
+    els.forgotPassword.textContent = copy.auth.forgotPassword;
+    els.registerPrompt.textContent = copy.auth.registerPrompt;
+    els.goRegister.textContent = copy.auth.goRegister;
+    els.registerHeading.textContent = copy.auth.registerHeading;
+    els.registerUsernameLabel.textContent = copy.auth.registerUsernameLabel;
+    els.registerEmailLabel.textContent = copy.auth.registerEmailLabel;
+    els.registerPasswordLabel.textContent = copy.auth.registerPasswordLabel;
+    els.registerSubmit.textContent = copy.auth.registerSubmit;
+    els.loginPrompt.textContent = copy.auth.loginPrompt;
+    els.goLogin.textContent = copy.auth.goLogin;
+    els.otpSubmit.textContent = copy.auth.otpSubmit;
+    els.togglePassword.textContent = copy.auth.toggleShow;
+    renderOtpCardContent();
+  }
+  if (page === "dashboard") {
+    renderDashboardStats();
+    updateUnlockStateUI();
+    switchScreen(state.currentScreen);
+  }
 }
-function updateNavState(activeSection = "home") { els.navButtons.forEach((button) => button.classList.toggle("active", button.dataset.section === activeSection)); }
-function showPublicApp() { els.publicView.classList.remove("hidden"); els.authView.classList.add("hidden"); els.dashboardView.classList.add("hidden"); }
-function showAuthApp(card = "login") { els.publicView.classList.add("hidden"); els.authView.classList.remove("hidden"); els.dashboardView.classList.add("hidden"); toggleAuthCard(card); }
-function showAppForAuthenticatedUser() { els.publicView.classList.add("hidden"); els.authView.classList.add("hidden"); els.dashboardView.classList.remove("hidden"); els.userDropdownTrigger.textContent = state.user?.displayName || state.user?.username || "User"; switchScreen("dashboard-home"); refreshNotes(); loadProfile(); }
-function scrollToSection(sectionId) { const section = document.getElementById(sectionId); if (!section) return; showPublicApp(); section.scrollIntoView({ behavior: "smooth", block: "start" }); updateNavState(sectionId); }
-function toggleAuthCard(target) { els.loginCard.classList.toggle("hidden", target !== "login"); els.registerCard.classList.toggle("hidden", target !== "register"); els.otpCard.classList.toggle("hidden", target !== "otp"); }
+
+function toggleAuthCard(target) {
+  if (!els.loginCard) return;
+  els.loginCard.classList.toggle("hidden", target !== "login");
+  els.registerCard.classList.toggle("hidden", target !== "register");
+  els.otpCard.classList.toggle("hidden", target !== "otp");
+  if (target === "otp") renderOtpCardContent();
+}
 
 async function api(path, options = {}) {
-  const response = await fetch(`/api${path}`, { headers: { "Content-Type": "application/json", ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) }, ...options });
+  const response = await fetch(`/api${path}`, {
+    headers: { "Content-Type": "application/json", ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
+    ...options,
+  });
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await response.text();
+    const line = text.trim().split("\n")[0] || "";
+    throw new Error(line.startsWith("<") ? t().toasts.apiJsonError : line || t().toasts.apiJsonError);
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || "Request failed.");
   return data;
 }
 
 function setSession(data, password) {
-  state.token = data.token; state.user = data.user; state.tempPassword = password; state.notesUnlocked = false;
-  localStorage.setItem("diaryToken", data.token); localStorage.setItem("diaryUser", JSON.stringify(data.user)); sessionStorage.setItem("tempPassword", password);
-  els.userDropdownTrigger.textContent = data.user.displayName || data.user.username;
+  state.token = data.token;
+  state.user = data.user;
+  state.tempPassword = password;
+  state.notesUnlocked = false;
+  state.personalKey = "";
+  state.hasAuthenticatedInSession = true;
+  localStorage.setItem("diaryToken", data.token);
+  localStorage.setItem("diaryUser", JSON.stringify(data.user));
+  sessionStorage.setItem("tempPassword", password);
+  sessionStorage.setItem("diaryAuthenticatedThisSession", "true");
+  sessionStorage.removeItem("personalKey");
 }
 
 function clearSession() {
-  state.token = ""; state.user = null; state.tempPassword = ""; state.personalKey = ""; state.notesUnlocked = false; state.notes = []; state.trash = []; state.selectedNoteId = null;
-  localStorage.removeItem("diaryToken"); localStorage.removeItem("diaryUser"); sessionStorage.removeItem("tempPassword"); sessionStorage.removeItem("personalKey");
+  state.token = "";
+  state.user = null;
+  state.tempPassword = "";
+  state.personalKey = "";
+  state.notesUnlocked = false;
+  state.notes = [];
+  state.trash = [];
+  state.sharedByMe = [];
+  state.sharedWithMe = [];
+  state.selectedNoteId = null;
+  state.selectedSharedNoteId = "";
+  state.personalKeyRequestId = "";
+  state.profileAccessRequestId = "";
+  state.passwordRequestId = "";
+  state.profileAccessUnlocked = false;
+  state.sharedPayload = null;
+  state.hasAuthenticatedInSession = false;
+  localStorage.removeItem("diaryToken");
+  localStorage.removeItem("diaryUser");
+  sessionStorage.removeItem("tempPassword");
+  sessionStorage.removeItem("personalKey");
+  sessionStorage.removeItem("recoveryRequestId");
+  sessionStorage.removeItem("diaryAuthenticatedThisSession");
 }
 
-function getEncryptionKey() { return state.personalKey || state.tempPassword; }
-function getDecryptionKey() { return state.notesUnlocked ? state.personalKey || state.tempPassword : ""; }
-function decryptText(cipherText) {
-  const key = getDecryptionKey();
-  if (!key) return cipherText;
-  try { const bytes = CryptoJS.AES.decrypt(cipherText, key); const plain = bytes.toString(CryptoJS.enc.Utf8); return plain || cipherText; } catch (error) { return cipherText; }
+function getEncryptionKey() { return state.personalKey || (!state.user?.hasPersonalKey ? state.tempPassword : ""); }
+function getDecryptionKey() { return state.notesUnlocked ? getEncryptionKey() : ""; }
+function decryptText(cipherText, overrideKey = "") {
+  const key = overrideKey || getDecryptionKey();
+  if (!key) return "";
+  try { return CryptoJS.AES.decrypt(cipherText, key).toString(CryptoJS.enc.Utf8) || ""; } catch { return ""; }
+}
+function encryptText(plainText, key) { return CryptoJS.AES.encrypt(plainText, key).toString(); }
+function hasValidPersonalKey(key) { return !state.user?.hasPersonalKey ? Boolean(key && key === state.tempPassword) : decryptText(state.user.personalKeyCheckCipher || "", key) === "bloomnote-personal-key-ready"; }
+function canDecryptNote(note, overrideKey = "") {
+  const key = overrideKey || getDecryptionKey();
+  if (!note?.encryptedContent || !key) return false;
+  return Boolean(decryptText(note.encryptedContent, key));
+}
+function getNoteTitle(note, overrideKey = "") {
+  const key = overrideKey || getDecryptionKey();
+  if (note.encryptedTitle && key) {
+    const decryptedTitle = decryptText(note.encryptedTitle, key);
+    if (decryptedTitle) return decryptedTitle;
+  }
+  return note.title || t().toasts.encryptedTitle;
+}
+function getNoteContent(note, overrideKey = "") {
+  const key = overrideKey || getDecryptionKey();
+  return note.encryptedContent && key ? decryptText(note.encryptedContent, key) : "";
 }
 
 function renderDashboardStats() {
+  if (!els.activeCount) return;
   const copy = t().dashboard;
-  els.activeCount.textContent = state.notes.length; els.trashCount.textContent = state.trash.length; els.keyStatus.textContent = state.notesUnlocked ? copy.notesUnlocked : copy.notesLocked;
+  els.activeCount.textContent = String(state.notes.length);
+  els.trashCount.textContent = String(state.trash.length);
+  els.keyStatus.textContent = state.notesUnlocked ? copy.notesUnlocked : copy.notesLocked;
 }
 
 function updateUnlockStateUI() {
+  if (!els.unlockNotes) return;
   const copy = t().dashboard;
   els.unlockNotes.textContent = state.notesUnlocked ? copy.lockButton : copy.unlockButton;
   els.notesSecurityHint.textContent = state.notesUnlocked ? copy.unlockedHint : copy.lockedHint;
-  els.noteEditor.classList.toggle("is-locked", !state.notesUnlocked && Boolean(state.selectedNoteId));
+  els.noteSearch.placeholder = t().toasts.searchPlaceholder;
+  if (els.shareStatus) els.shareStatus.textContent = t().toasts.shareInfo;
+  if (els.noteEditor) els.noteEditor.classList.toggle("is-locked", !state.notesUnlocked && Boolean(state.selectedNoteId));
 }
 
 function renderNotes() {
+  if (!els.notesList || !els.trashList || !els.noteSearch) return;
   const copy = t().dashboard;
-  if (!state.notes.length) {
+  const query = els.noteSearch.value.trim().toLowerCase();
+  const visibleNotes = state.notes.filter((note) => {
+    const title = state.notesUnlocked && canDecryptNote(note) ? getNoteTitle(note) : t().toasts.encryptedTitle;
+    return !query || title.toLowerCase().includes(query);
+  });
+  if (!visibleNotes.length) {
     els.notesList.innerHTML = `<article class="note-card"><p>${escapeHtml(copy.emptyNotes)}</p></article>`;
   } else {
-    els.notesList.innerHTML = state.notes.map((note) => {
-      const preview = state.notesUnlocked ? decryptText(note.encryptedContent) : note.encryptedContent;
-      return `<article class="note-card"><span class="note-meta">${state.notesUnlocked ? copy.unlockedBadge : copy.lockedBadge}</span><h4>${escapeHtml(note.title)}</h4><p>${escapeHtml((preview || note.encryptedContent).slice(0, 140))}</p><div class="row"><button class="secondary-btn" type="button" onclick="selectNote('${note.id}')">${copy.openLabel}</button><button class="secondary-btn" type="button" onclick="deleteNote('${note.id}')">${copy.deleteLabel}</button></div></article>`;
+    els.notesList.innerHTML = visibleNotes.map((note) => {
+      const isReadable = state.notesUnlocked && canDecryptNote(note);
+      const title = isReadable ? getNoteTitle(note) : t().toasts.encryptedTitle;
+      const preview = isReadable ? getNoteContent(note) : note.encryptedContent;
+      return `<article class="note-card"><span class="note-meta">${isReadable ? copy.unlockedBadge : copy.lockedBadge}</span><h4>${escapeHtml(title)}</h4><p>${escapeHtml((preview || note.encryptedContent || "").slice(0, 140))}</p><div class="row"><button class="secondary-btn" type="button" onclick="selectNote('${note.id}')">${copy.openLabel}</button><button class="secondary-btn" type="button" onclick="deleteNote('${note.id}')">${copy.deleteLabel}</button></div></article>`;
     }).join("");
   }
   if (!state.trash.length) {
     els.trashList.innerHTML = `<article class="note-card"><p>${escapeHtml(copy.emptyTrash)}</p></article>`;
     return;
   }
-  els.trashList.innerHTML = state.trash.map((note) => `<article class="note-card"><span class="note-meta">${escapeHtml(copy.lockedBadge)}</span><h4>${escapeHtml(note.title)}</h4><p>${escapeHtml(note.encryptedContent.slice(0, 140))}</p><div class="row"><button class="secondary-btn" type="button" onclick="restoreNote('${note.id}')">${copy.restoreLabel}</button></div></article>`).join("");
+  els.trashList.innerHTML = state.trash.map((note) => {
+    const isReadable = state.notesUnlocked && canDecryptNote(note);
+    const title = isReadable ? getNoteTitle(note) : t().toasts.encryptedTitle;
+    const preview = isReadable ? getNoteContent(note) : note.encryptedContent || "";
+    return `<article class="note-card"><span class="note-meta">${escapeHtml(isReadable ? copy.unlockedBadge : copy.lockedBadge)}</span><h4>${escapeHtml(title)}</h4><p>${escapeHtml(preview.slice(0, 140))}</p><div class="row"><button class="secondary-btn" type="button" onclick="restoreNote('${note.id}')">${copy.restoreLabel}</button></div></article>`;
+  }).join("");
 }
 
 function setEditorMode() {
-  const isExistingLocked = Boolean(state.selectedNoteId) && !state.notesUnlocked;
-  els.noteEditor.contentEditable = String(!isExistingLocked);
-  els.noteEditor.classList.toggle("is-locked", isExistingLocked);
+  if (!els.noteEditor || !els.noteTitle) return;
+  const locked = Boolean(state.selectedNoteId) && !state.notesUnlocked;
+  els.noteEditor.contentEditable = String(!locked);
+  els.noteEditor.classList.toggle("is-locked", locked);
+  els.noteTitle.readOnly = locked;
 }
 
 function switchScreen(screenId) {
+  if (!els.screens.length) return;
   state.currentScreen = screenId;
   els.screens.forEach((screen) => screen.classList.toggle("hidden", screen.id !== screenId));
   els.sideButtons.forEach((button) => button.classList.toggle("active", button.dataset.screen === screenId));
-  els.fab.classList.toggle("hidden", screenId !== "notes");
+  if (els.fab) els.fab.classList.toggle("hidden", screenId !== "notes");
   const [title, subtitle] = t().dashboard.screens[screenId] || ["Dashboard", ""];
-  els.screenTitle.textContent = title; els.screenSubtitle.textContent = subtitle; updateUnlockStateUI(); setEditorMode();
+  if (els.screenTitle) els.screenTitle.textContent = title;
+  if (els.screenSubtitle) els.screenSubtitle.textContent = subtitle;
+  updateUnlockStateUI();
+  setEditorMode();
 }
 
-async function refreshNotes(query = "") {
+async function refreshNotes() {
   if (!state.token) return;
-  state.notes = await api(`/notes?q=${encodeURIComponent(query)}`); state.trash = await api("/notes?includeTrash=true"); renderDashboardStats(); renderNotes();
+  state.notes = await api("/notes");
+  state.trash = await api("/notes?includeTrash=true");
+  renderDashboardStats();
+  renderNotes();
+}
+
+async function refreshSharedNotes() {
+  if (!state.token || !els.sharedWithMeList || !els.sharedByMeList) return;
+  state.sharedWithMe = await api("/notes/shared-with-me");
+  state.sharedByMe = await api("/notes/shared-by-me");
+  renderSharedLists();
+}
+
+function renderSharedLists() {
+  if (!els.sharedWithMeList || !els.sharedByMeList) return;
+
+  if (!state.sharedWithMe.length) {
+    els.sharedWithMeList.innerHTML = `<article class="note-card"><p>${escapeHtml(state.language === "vi" ? "Chưa có nhật ký nào được chia sẻ cho bạn." : "No notes have been shared with you yet.")}</p></article>`;
+  } else {
+    els.sharedWithMeList.innerHTML = state.sharedWithMe.map((share) => `
+      <article class="note-card">
+        <span class="note-meta">${escapeHtml(share.canEdit ? "Can edit" : "View only")}</span>
+        <h4>${escapeHtml(share.ownerName || "Owner")}</h4>
+        <p>${escapeHtml(share.canView ? "Mo note nay tu dashboard de nhap khoa va xem." : "Chu so huu dang tam tat quyen xem.")}</p>
+        <div class="row">
+          <button class="secondary-btn" type="button" onclick="openSharedDashboardNote('${share.id}')">Mở</button>
+          <button class="secondary-btn" type="button" onclick="removeSharedDashboardNote('${share.id}')">Ẩn</button>
+        </div>
+      </article>
+    `).join("");
+  }
+
+  if (!state.sharedByMe.length) {
+    els.sharedByMeList.innerHTML = `<article class="note-card"><p>${escapeHtml(state.language === "vi" ? "Bạn chưa chia sẻ nhật ký nào." : "You have not shared any notes yet.")}</p></article>`;
+  } else {
+    els.sharedByMeList.innerHTML = state.sharedByMe.map((share) => `
+      <article class="note-card">
+        <span class="note-meta">${escapeHtml(share.accessMode === "edit" ? "Edit access" : "Public view")}</span>
+        <h4>${escapeHtml(share.recipientName || "Public link")}</h4>
+        <p>${escapeHtml(`View: ${share.canView ? "On" : "Off"} | Edit: ${share.canEdit ? "On" : "Off"}`)}</p>
+        <div class="row">
+          <button class="secondary-btn" type="button" onclick="openSharedDashboardNote('${share.id}')">Mở</button>
+          <button class="secondary-btn" type="button" onclick="toggleShareViewAccess('${share.id}', ${share.canView ? "false" : "true"})">${share.canView ? "Tắt xem" : "Bật xem"}</button>
+          ${share.accessMode === "edit" ? `<button class="secondary-btn" type="button" onclick="toggleShareEditAccess('${share.id}', ${share.canEdit ? "false" : "true"})">${share.canEdit ? "Khóa sửa" : "Cho sửa"}</button>` : ""}
+          <button class="secondary-btn" type="button" onclick="deleteOwnedShare('${share.id}')">Xóa</button>
+        </div>
+      </article>
+    `).join("");
+  }
 }
 
 window.selectNote = function selectNote(noteId) {
   const note = state.notes.find((item) => item.id === noteId);
   if (!note) return;
   if (!state.notesUnlocked) return showToast(t().toasts.unlockRequiredForExisting);
-  state.selectedNoteId = noteId; els.noteTitle.value = note.title; els.noteEditor.innerHTML = decryptText(note.encryptedContent) || note.encryptedContent; setEditorMode();
+  if (!canDecryptNote(note)) return showToast(t().toasts.invalidKey);
+  state.selectedNoteId = noteId;
+  els.noteTitle.value = getNoteTitle(note);
+  els.noteEditor.innerHTML = getNoteContent(note);
+  if (els.shareLinkPanel) els.shareLinkPanel.classList.add("hidden");
+  setEditorMode();
 };
 
 window.deleteNote = async function deleteNote(noteId) {
   try {
     await api(`/notes/${noteId}`, { method: "DELETE" });
-    if (state.selectedNoteId === noteId) { state.selectedNoteId = null; els.noteTitle.value = ""; els.noteEditor.innerHTML = ""; }
-    showToast(t().toasts.movedToTrash); await refreshNotes(els.noteSearch.value.trim());
+    if (state.selectedNoteId === noteId) {
+      state.selectedNoteId = null;
+      els.noteTitle.value = "";
+      els.noteEditor.innerHTML = "";
+    }
+    showToast(t().toasts.movedToTrash);
+    await refreshNotes();
   } catch (error) { showToast(error.message); }
 };
 
 window.restoreNote = async function restoreNote(noteId) {
   try { await api(`/notes/${noteId}/restore`, { method: "POST" }); showToast(t().toasts.restored); await refreshNotes(); } catch (error) { showToast(error.message); }
 };
+
 async function saveNote() {
-  const title = els.noteTitle.value.trim(); const content = els.noteEditor.innerHTML.trim(); const encryptionKey = getEncryptionKey();
+  const title = els.noteTitle.value.trim();
+  const content = els.noteEditor.innerHTML.trim();
+  const encryptionKey = getEncryptionKey();
   if (!title || !content) return showToast(t().toasts.needFields);
   if (!encryptionKey) return showToast(t().toasts.needKey);
   if (state.selectedNoteId && !state.notesUnlocked) return showToast(t().toasts.needUnlock);
-  const payload = { title, content, encryptionKey }; const url = state.selectedNoteId ? `/notes/${state.selectedNoteId}` : "/notes"; const method = state.selectedNoteId ? "PUT" : "POST";
-  try { await api(url, { method, body: JSON.stringify(payload) }); showToast(t().toasts.saved); els.noteTitle.value = ""; els.noteEditor.innerHTML = ""; state.selectedNoteId = null; setEditorMode(); await refreshNotes(els.noteSearch.value.trim()); } catch (error) { showToast(error.message); }
+  try {
+    await api(state.selectedNoteId ? `/notes/${state.selectedNoteId}` : "/notes", {
+      method: state.selectedNoteId ? "PUT" : "POST",
+      body: JSON.stringify({ title, content, encryptionKey }),
+    });
+    showToast(t().toasts.saved);
+    resetNoteEditorForNewEntry();
+    await refreshNotes();
+  } catch (error) { showToast(error.message); }
 }
 
 async function shareSelectedNote() {
   if (!state.selectedNoteId) return showToast(t().toasts.noNoteToShare);
+  if (!state.notesUnlocked) return showToast(t().toasts.needUnlock);
   const sharedTestKey = window.prompt(t().toasts.sharePrompt, "");
+  if (!sharedTestKey) return;
+  const accessMode = els.shareAccessMode?.value || "view";
+  const recipientIdentifier = els.shareRecipient?.value.trim() || "";
+  if (accessMode === "edit" && !recipientIdentifier) return showToast(t().toasts.needRecipient);
   try {
-    const data = await api(`/notes/${state.selectedNoteId}/share`, { method: "POST", body: JSON.stringify({ sharedTestKey }) });
-    await navigator.clipboard.writeText(`Share link: ${data.shareLink}\nEncrypted data: ${data.encryptedContent}\nTest key: ${data.testKey || "(none)"}`);
+    const note = state.notes.find((item) => item.id === state.selectedNoteId);
+    if (!note) return showToast(t().toasts.noNoteToShare);
+    const data = await api(`/notes/${state.selectedNoteId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ sharedTitle: getNoteTitle(note), sharedContent: getNoteContent(note), sharedTestKey, accessMode, recipientIdentifier }),
+    });
+    if (els.shareLinkOutput) els.shareLinkOutput.value = data.shareLink;
+    if (els.shareLinkPanel) els.shareLinkPanel.classList.remove("hidden");
+    await navigator.clipboard.writeText(data.shareLink);
     showToast(t().toasts.shareCreated);
+    await refreshSharedNotes();
   } catch (error) { showToast(error.message); }
 }
 
 async function loadProfile() {
   if (!state.token) return;
-  const user = await api("/user/me"); state.user = user; localStorage.setItem("diaryUser", JSON.stringify(user)); els.profileDisplayName.value = user.displayName || ""; els.profileBirthDate.value = user.birthDate || ""; els.profileEmail.value = user.email || ""; els.profileGender.value = user.gender || "";
+  const user = await api("/user/me");
+  state.user = user;
+  localStorage.setItem("diaryUser", JSON.stringify(user));
+  els.profileDisplayName.value = user.displayName || "";
+  els.profileUsername.value = user.username || "";
+  els.profileBirthDate.value = user.birthDate || "";
+  els.profileEmail.value = user.email || "";
+  els.profileGender.value = user.gender || "";
+  if (els.userDropdownTrigger) els.userDropdownTrigger.textContent = user.displayName || user.username || "User";
 }
 
 async function saveProfile() {
   try {
-    const payload = { displayName: els.profileDisplayName.value.trim(), birthDate: els.profileBirthDate.value, email: els.profileEmail.value.trim(), gender: els.profileGender.value, personalKey: els.profilePersonalKey.value.trim() };
-    const data = await api("/user/me", { method: "PUT", body: JSON.stringify(payload) });
-    state.user = data.user; localStorage.setItem("diaryUser", JSON.stringify(data.user));
-    if (payload.personalKey) { state.personalKey = payload.personalKey; sessionStorage.setItem("personalKey", payload.personalKey); els.profilePersonalKey.value = ""; }
-    renderDashboardStats(); updateUnlockStateUI(); showToast(t().toasts.profileSaved);
+    const data = await api("/user/me", {
+      method: "PUT",
+      body: JSON.stringify({ displayName: els.profileDisplayName.value.trim(), birthDate: els.profileBirthDate.value, email: els.profileEmail.value.trim(), gender: els.profileGender.value }),
+    });
+    state.user = data.user;
+    localStorage.setItem("diaryUser", JSON.stringify(data.user));
+    renderDashboardStats();
+    updateUnlockStateUI();
+    showToast(t().toasts.profileSaved);
   } catch (error) { showToast(error.message); }
 }
 
-function resetNoteEditorForNewEntry() { state.selectedNoteId = null; els.noteTitle.value = ""; els.noteEditor.innerHTML = ""; setEditorMode(); }
-
-async function handleHashRoute() {
-  const hash = window.location.hash.replace("#", "");
-  const sidebar = document.querySelector(".sidebar"); const userMenu = els.userDropdownTrigger.closest(".user-menu");
-  if (hash.startsWith("share/")) {
-    const shareToken = hash.split("/")[1]; showPublicApp();
-    try {
-      const response = await fetch(`/api/notes/shared/${shareToken}`); const data = await response.json(); if (!response.ok) throw new Error(data.message || "Shared note not found.");
-      els.publicView.classList.add("hidden"); els.authView.classList.add("hidden"); els.dashboardView.classList.remove("hidden"); switchScreen("share-view"); sidebar.classList.add("hidden"); userMenu.classList.add("hidden"); els.sharedNoteTitle.textContent = data.title; els.sharedNoteKey.textContent = data.sharedTestKey ? `Test key: ${data.sharedTestKey}` : "No test key included."; els.sharedNoteContent.value = data.encryptedContent;
-    } catch (error) { showToast(error.message || t().toasts.sharedLoadError); }
-    return;
-  }
-  sidebar.classList.remove("hidden"); userMenu.classList.remove("hidden");
-  if (state.token && state.user) return showAppForAuthenticatedUser();
-  if (hash === "login") return showAuthApp("login");
-  showPublicApp(); updateNavState(hash || "home");
-  if (hash) { const section = document.getElementById(hash); if (section) requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" })); }
+function resetNoteEditorForNewEntry() {
+  state.selectedNoteId = null;
+  if (els.noteTitle) els.noteTitle.value = "";
+  if (els.noteEditor) els.noteEditor.innerHTML = "";
+  if (els.shareLinkPanel) els.shareLinkPanel.classList.add("hidden");
+  setEditorMode();
 }
 
-els.navButtons.forEach((button) => button.addEventListener("click", () => { const section = button.dataset.section; history.replaceState(null, "", `#${section}`); scrollToSection(section); }));
-els.brandHome.addEventListener("click", () => { history.replaceState(null, "", "#home"); scrollToSection("home"); });
-els.heroAbout.addEventListener("click", () => { history.replaceState(null, "", "#about"); scrollToSection("about"); });
-els.heroLogin.addEventListener("click", () => { history.replaceState(null, "", "#login"); showAuthApp("login"); });
-els.navLogin.addEventListener("click", () => { history.replaceState(null, "", "#login"); showAuthApp("login"); });
-els.authBackHome.addEventListener("click", () => { history.replaceState(null, "", "#home"); scrollToSection("home"); });
-
-els.languageToggle.addEventListener("click", () => { state.language = state.language === "vi" ? "en" : "vi"; renderMarketingContent(); renderNotes(); });
-els.goRegister.addEventListener("click", () => toggleAuthCard("register"));
-els.goLogin.addEventListener("click", () => toggleAuthCard("login"));
-els.togglePassword.addEventListener("click", () => { const currentType = els.loginPassword.getAttribute("type"); const copy = t().auth; els.loginPassword.setAttribute("type", currentType === "password" ? "text" : "password"); els.togglePassword.textContent = currentType === "password" ? copy.toggleHide : copy.toggleShow; });
-
-els.loginSubmit.addEventListener("click", async () => {
+async function requestPersonalKeyOtp() {
+  const newPersonalKey = els.profileNewPersonalKey.value.trim();
+  if (!newPersonalKey) return showToast(t().toasts.needNewPersonalKey);
+  if (state.user?.hasPersonalKey && !state.notesUnlocked) return showToast(t().toasts.needUnlockBeforeChange);
   try {
-    const identifier = els.loginIdentifier.value.trim(); const password = els.loginPassword.value; const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password }) });
-    setSession(data, password); showToast(t().toasts.loginSuccess); showAppForAuthenticatedUser();
+    const data = await api("/user/personal-key/request-otp", {
+      method: "POST",
+      body: JSON.stringify({ newPersonalKey }),
+    });
+    state.personalKeyRequestId = data.requestId;
+    showToast(t().toasts.personalKeyOtpSent);
   } catch (error) { showToast(error.message); }
-});
+}
 
-els.forgotPassword.addEventListener("click", async () => {
-  const email = window.prompt(t().toasts.forgotPrompt, els.loginIdentifier.value.trim()); if (!email) return;
-  try { const data = await api("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }); showToast(data.message); } catch (error) { showToast(error.message); }
-});
+function openModal(element) { if (element) element.classList.remove("hidden"); }
+function closeModal(element) { if (element) element.classList.add("hidden"); }
 
-els.registerSubmit.addEventListener("click", async () => {
-  try { const payload = { username: els.registerUsername.value.trim(), email: els.registerEmail.value.trim(), password: els.registerPassword.value }; const data = await api("/auth/register", { method: "POST", body: JSON.stringify(payload) }); state.pendingId = data.pendingId; showToast(t().toasts.registerOtp); toggleAuthCard("otp"); } catch (error) { showToast(error.message); }
-});
-els.otpSubmit.addEventListener("click", async () => {
-  try { await api("/auth/verify-otp", { method: "POST", body: JSON.stringify({ pendingId: state.pendingId, otp: els.otpCode.value.trim() }) }); showToast(t().toasts.registerSuccess); toggleAuthCard("login"); } catch (error) { showToast(error.message); }
-});
-els.sideButtons.forEach((button) => button.addEventListener("click", async () => { switchScreen(button.dataset.screen); if (button.dataset.screen === "notes" && !state.selectedNoteId) { els.noteEditor.innerHTML = t().dashboard.newNotePlaceholder; els.noteEditor.contentEditable = "true"; els.noteEditor.classList.remove("is-locked"); } }));
-els.userDropdownTrigger.addEventListener("click", () => els.userDropdown.classList.toggle("hidden"));
-els.dropdownActions.forEach((button) => button.addEventListener("click", async () => { const action = button.dataset.profileAction; els.userDropdown.classList.add("hidden"); if (action === "profile") { switchScreen("profile"); await loadProfile(); } if (action === "switch" || action === "logout") { clearSession(); showAuthApp("login"); renderMarketingContent(); showToast(action === "switch" ? t().toasts.switchAccount : t().toasts.logout); } }));
-document.querySelectorAll(".editor-toolbar button").forEach((button) => button.addEventListener("click", () => { if (!state.selectedNoteId || state.notesUnlocked) document.execCommand(button.dataset.command, false, null); }));
-els.noteSearch.addEventListener("input", () => refreshNotes(els.noteSearch.value.trim()));
-els.unlockNotes.addEventListener("click", () => { if (state.notesUnlocked) { state.notesUnlocked = false; resetNoteEditorForNewEntry(); renderDashboardStats(); updateUnlockStateUI(); renderNotes(); return showToast(t().toasts.lockSuccess); } const key = window.prompt(t().toasts.keyPrompt, state.personalKey || state.tempPassword); if (key) { state.personalKey = key; state.notesUnlocked = true; sessionStorage.setItem("personalKey", key); renderDashboardStats(); updateUnlockStateUI(); renderNotes(); showToast(t().toasts.unlockSuccess); } });
-els.saveNote.addEventListener("click", saveNote); els.shareNote.addEventListener("click", shareSelectedNote); els.fab.addEventListener("click", () => { switchScreen("notes"); resetNoteEditorForNewEntry(); }); els.saveProfile.addEventListener("click", saveProfile);
-window.addEventListener("hashchange", handleHashRoute);
-renderMarketingContent(); toggleAuthCard("login"); handleHashRoute(); resetNoteEditorForNewEntry();
+async function requestProfileAccessOtp() {
+  try {
+    const data = await api("/user/profile-access/request-otp", { method: "POST", body: JSON.stringify({}) });
+    state.profileAccessRequestId = data.requestId;
+    closeModal(els.profileAccessModal);
+    openModal(els.profileOtpModal);
+    showToast(t().toasts.profileAccessOtpSent);
+  } catch (error) { showToast(error.message); }
+}
+
+async function requestRecoveryOtp() {
+  try {
+    const data = await api("/user/recovery/request-otp", { method: "POST", body: JSON.stringify({}) });
+    state.recoveryRequestId = data.requestId;
+    sessionStorage.setItem("recoveryRequestId", data.requestId);
+    closeModal(els.profileAccessModal);
+    openModal(els.recoveryModal);
+    showToast(t().toasts.recoveryOtpSent);
+  } catch (error) { showToast(error.message); }
+}
+
+async function confirmProfileAccessOtp() {
+  try {
+    await api("/user/profile-access/confirm", { method: "POST", body: JSON.stringify({ requestId: state.profileAccessRequestId, otp: els.profileAccessOtp.value.trim() }) });
+    state.profileAccessUnlocked = true;
+    closeModal(els.profileOtpModal);
+    switchScreen("profile");
+    await loadProfile();
+    showToast(t().toasts.profileAccessGranted);
+  } catch (error) { showToast(error.message); }
+}
+
+async function confirmRecoveryOtp() {
+  const otp = els.recoveryOtp.value.trim();
+  const newPassword = els.recoveryNewPassword.value;
+  if (!otp || !newPassword) return showToast(t().toasts.needPasswordFields);
+  try {
+    const data = await api("/user/recovery/confirm", { method: "POST", body: JSON.stringify({ requestId: state.recoveryRequestId, otp, newPassword }) });
+    state.user = data.user;
+    state.tempPassword = newPassword;
+    state.personalKey = "";
+    state.notesUnlocked = false;
+    state.profileAccessUnlocked = true;
+    state.recoveryRequestId = "";
+    sessionStorage.removeItem("recoveryRequestId");
+    sessionStorage.setItem("tempPassword", newPassword);
+    sessionStorage.removeItem("personalKey");
+    localStorage.setItem("diaryUser", JSON.stringify(data.user));
+    els.recoveryOtp.value = "";
+    els.recoveryNewPassword.value = "";
+    closeModal(els.recoveryModal);
+    switchScreen("profile");
+    await loadProfile();
+    showToast(t().toasts.recoverySuccess);
+  } catch (error) { showToast(error.message); }
+}
+
+async function requestPasswordOtp() {
+  const newPassword = els.securityNewPassword.value;
+  if (!newPassword) return showToast(t().toasts.needPasswordFields);
+  if (!state.user?.hasPersonalKey && state.notes.length && !state.notesUnlocked) {
+    return showToast(t().toasts.needUnlockBeforePasswordChange);
+  }
+  try {
+    const data = await api("/user/password/request-otp", { method: "POST", body: JSON.stringify({ newPassword }) });
+    state.passwordRequestId = data.requestId;
+    showToast(t().toasts.passwordOtpSent);
+  } catch (error) { showToast(error.message); }
+}
+
+async function confirmPasswordChange() {
+  if (!els.securityNewPassword.value || !els.securityPasswordOtp.value.trim()) return showToast(t().toasts.needPasswordFields);
+  try {
+    const payload = {
+      requestId: state.passwordRequestId,
+      otp: els.securityPasswordOtp.value.trim(),
+    };
+    if (!state.user?.hasPersonalKey) {
+      payload.reEncryptedNotes = buildReEncryptedNotes(
+        els.securityNewPassword.value,
+        t().toasts.needUnlockBeforePasswordChange,
+        t().toasts.passwordChangeReencryptFailed
+      );
+    }
+    const data = await api("/user/password/confirm", { method: "POST", body: JSON.stringify(payload) });
+    state.user = data.user || state.user;
+    state.tempPassword = els.securityNewPassword.value;
+    state.passwordRequestId = "";
+    if (!state.user?.hasPersonalKey) {
+      state.personalKey = "";
+      state.notesUnlocked = Boolean(state.notes.length);
+      sessionStorage.removeItem("personalKey");
+    }
+    sessionStorage.setItem("tempPassword", state.tempPassword);
+    localStorage.setItem("diaryUser", JSON.stringify(state.user));
+    els.securityNewPassword.value = "";
+    els.securityPasswordOtp.value = "";
+    await refreshNotes();
+    renderDashboardStats();
+    updateUnlockStateUI();
+    showToast(t().toasts.passwordUpdated);
+  } catch (error) { showToast(error.message); }
+}
+
+function buildReEncryptedNotes(newPersonalKey, unlockErrorMessage = t().toasts.needUnlockBeforeChange, decryptErrorMessage = t().toasts.invalidKey) {
+  const currentKey = state.user?.hasPersonalKey ? state.personalKey : (state.personalKey || state.tempPassword);
+  if (!currentKey) throw new Error(unlockErrorMessage);
+  return [...state.notes, ...state.trash].map((note) => {
+    const title = getNoteTitle(note, currentKey);
+    const content = getNoteContent(note, currentKey);
+    if (!title || !content) throw new Error(decryptErrorMessage);
+    return { id: note.id, encryptedTitle: encryptText(title, newPersonalKey), encryptedContent: encryptText(content, newPersonalKey) };
+  });
+}
+
+async function confirmPersonalKeyChange() {
+  const newPersonalKey = els.profileNewPersonalKey.value.trim();
+  const otp = els.profilePersonalKeyOtp.value.trim();
+  if (!newPersonalKey) return showToast(t().toasts.needNewPersonalKey);
+  if (!otp) return showToast(t().toasts.needOtp);
+  if (!state.personalKeyRequestId) return showToast(t().toasts.personalKeyOtpSent);
+  try {
+    const data = await api("/user/personal-key/confirm", { method: "POST", body: JSON.stringify({ requestId: state.personalKeyRequestId, otp, reEncryptedNotes: buildReEncryptedNotes(newPersonalKey) }) });
+    state.user = data.user;
+    state.personalKey = newPersonalKey;
+    state.notesUnlocked = true;
+    state.personalKeyRequestId = "";
+    sessionStorage.setItem("personalKey", newPersonalKey);
+    localStorage.setItem("diaryUser", JSON.stringify(data.user));
+    els.profileNewPersonalKey.value = "";
+    els.profilePersonalKeyOtp.value = "";
+    showToast(t().toasts.personalKeyUpdated);
+    await refreshNotes();
+    await loadProfile();
+  } catch (error) { showToast(error.message); }
+}
+
+async function loadSharedNote() {
+  const hash = window.location.hash.replace("#", "");
+  if (!hash.startsWith("share/")) return false;
+  const shareToken = hash.split("/")[1];
+  const sidebar = document.querySelector(".sidebar");
+  const userMenu = document.querySelector(".user-menu");
+  try {
+      const data = await api(`/notes/shared/${shareToken}`);
+      state.sharedPayload = data;
+      state.selectedSharedNoteId = data.id || "";
+      if (sidebar) sidebar.classList.add("hidden");
+      if (userMenu) userMenu.classList.add("hidden");
+      switchScreen("share-view");
+      els.sharedNoteTitle.textContent = t().toasts.encryptedTitle;
+      els.sharedNoteKey.textContent = t().toasts.shareInfo;
+      els.sharedNoteAccessKey.value = "";
+      if (els.sharedNoteTitleInput) els.sharedNoteTitleInput.value = t().toasts.encryptedTitle;
+      els.sharedNoteContent.value = data.encryptedContent;
+      if (els.sharedNoteSave) els.sharedNoteSave.classList.add("hidden");
+  } catch (error) {
+    showToast(error.message || t().toasts.sharedLoadError);
+  }
+  return true;
+}
+
+async function openSharedNoteForDashboard(shareId) {
+  const data = await api(`/notes/shares/${shareId}`);
+  state.sharedPayload = data;
+  state.selectedSharedNoteId = shareId;
+  switchScreen("share-view");
+  els.sharedNoteTitle.textContent = data.canView ? (data.recipientName || data.ownerName || "Shared note") : t().toasts.encryptedTitle;
+  els.sharedNoteKey.textContent = data.canView ? (data.canEdit ? "Nhap khoa de mo va co the chinh sua." : "Nhap khoa de xem noi dung duoc chia se.") : "Chu so huu dang tat quyen xem.";
+  els.sharedNoteAccessKey.value = "";
+  if (els.sharedNoteTitleInput) {
+    els.sharedNoteTitleInput.value = data.canView ? "" : t().toasts.encryptedTitle;
+    els.sharedNoteTitleInput.readOnly = true;
+  }
+  els.sharedNoteContent.value = data.encryptedContent || "";
+  els.sharedNoteContent.readOnly = true;
+  if (els.sharedNoteSave) els.sharedNoteSave.classList.toggle("hidden", true);
+}
+
+window.openSharedDashboardNote = async function openSharedDashboardNote(shareId) {
+  try {
+    await openSharedNoteForDashboard(shareId);
+  } catch (error) { showToast(error.message); }
+};
+
+window.removeSharedDashboardNote = async function removeSharedDashboardNote(shareId) {
+  try {
+    await api(`/notes/shared-with-me/${shareId}/remove`, { method: "POST" });
+    showToast(t().toasts.shareRemoved);
+    await refreshSharedNotes();
+  } catch (error) { showToast(error.message); }
+};
+
+window.toggleShareViewAccess = async function toggleShareViewAccess(shareId, canView) {
+  try {
+    await api(`/notes/shares/${shareId}/access`, { method: "PATCH", body: JSON.stringify({ canView }) });
+    showToast(t().toasts.shareUpdated);
+    await refreshSharedNotes();
+  } catch (error) { showToast(error.message); }
+};
+
+window.toggleShareEditAccess = async function toggleShareEditAccess(shareId, canEdit) {
+  try {
+    await api(`/notes/shares/${shareId}/access`, { method: "PATCH", body: JSON.stringify({ canEdit }) });
+    showToast(t().toasts.shareUpdated);
+    await refreshSharedNotes();
+  } catch (error) { showToast(error.message); }
+};
+
+window.deleteOwnedShare = async function deleteOwnedShare(shareId) {
+  try {
+    await api(`/notes/shares/${shareId}`, { method: "DELETE" });
+    showToast(t().toasts.shareRemoved);
+    await refreshSharedNotes();
+  } catch (error) { showToast(error.message); }
+};
+
+function initCommonEvents() {
+  on(els.languageToggle, "click", () => {
+    state.language = state.language === "vi" ? "en" : "vi";
+    renderMarketingContent();
+    renderNotes();
+  });
+}
+
+function initHomePage() {
+  renderMarketingContent();
+  els.navButtons.forEach((button) => on(button, "click", () => {
+    const target = byId(button.dataset.section);
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  on(els.brandHome, "click", () => goToHome("home"));
+  on(els.navLogin, "click", goToLogin);
+  on(els.heroAbout, "click", () => byId("about")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  on(els.heroLogin, "click", goToLogin);
+  const section = byId(window.location.hash.replace("#", ""));
+  if (section) requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" }));
+}
+
+function initLoginPage() {
+  renderMarketingContent();
+  if (state.token && state.user && state.hasAuthenticatedInSession) return goToDashboard();
+  toggleAuthCard(state.pendingId || state.forgotPasswordRequestId ? "otp" : "login");
+  on(els.brandHome, "click", () => goToHome("home"));
+  on(els.navLogin, "click", goToLogin);
+  els.navButtons.forEach((button) => on(button, "click", () => goToHome(button.dataset.section)));
+  on(els.authBackHome, "click", () => goToHome("home"));
+  on(els.goRegister, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("register"); });
+  on(els.goLogin, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("login"); });
+  on(els.togglePassword, "click", () => {
+    const currentType = els.loginPassword.getAttribute("type");
+    const copy = t().auth;
+    els.loginPassword.setAttribute("type", currentType === "password" ? "text" : "password");
+    els.togglePassword.textContent = currentType === "password" ? copy.toggleHide : copy.toggleShow;
+  });
+  on(els.loginSubmit, "click", async () => {
+    try {
+      const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ identifier: els.loginIdentifier.value.trim(), password: els.loginPassword.value }) });
+      setSession(data, els.loginPassword.value);
+      showToast(t().toasts.loginSuccess);
+      goToDashboard();
+    } catch (error) { showToast(error.message); }
+  });
+  on(els.forgotPassword, "click", async () => {
+    const email = window.prompt(t().toasts.forgotPrompt, els.loginIdentifier.value.trim());
+    if (!email) return;
+    try {
+      const data = await api("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
+      state.authFlow = "forgot";
+      state.forgotPasswordRequestId = data.requestId;
+      sessionStorage.setItem("authFlow", "forgot");
+      sessionStorage.setItem("forgotPasswordRequestId", data.requestId);
+      toggleAuthCard("otp");
+      showToast(data.message || t().toasts.forgotOtpSent);
+    } catch (error) { showToast(error.message); }
+  });
+  on(els.registerSubmit, "click", async () => {
+    try {
+      const data = await api("/auth/register", { method: "POST", body: JSON.stringify({ username: els.registerUsername.value.trim(), email: els.registerEmail.value.trim(), password: els.registerPassword.value }) });
+      state.authFlow = "register";
+      state.pendingId = data.pendingId;
+      sessionStorage.setItem("authFlow", "register");
+      sessionStorage.setItem("pendingId", data.pendingId);
+      toggleAuthCard("otp");
+      showToast(t().toasts.registerOtp);
+    } catch (error) { showToast(error.message); }
+  });
+  on(els.otpResend, "click", async () => {
+    if (state.authFlow !== "register" || !state.pendingId) return;
+    try {
+      await api("/auth/resend-otp", { method: "POST", body: JSON.stringify({ pendingId: state.pendingId }) });
+      showToast(t().toasts.resendOtp);
+    } catch (error) { showToast(error.message); }
+  });
+  on(els.otpSubmit, "click", async () => {
+    try {
+      const otp = els.otpCode.value.trim();
+      if (state.authFlow === "forgot") {
+        const newPassword = els.otpNewPassword.value;
+        if (!newPassword) return showToast(t().toasts.needForgotPassword);
+        await api("/auth/forgot-password/verify", { method: "POST", body: JSON.stringify({ requestId: state.forgotPasswordRequestId, otp, newPassword }) });
+        state.forgotPasswordRequestId = "";
+        state.authFlow = "register";
+        sessionStorage.removeItem("forgotPasswordRequestId");
+        sessionStorage.setItem("authFlow", "register");
+        els.otpCode.value = "";
+        if (els.otpNewPassword) els.otpNewPassword.value = "";
+        toggleAuthCard("login");
+        return showToast(t().toasts.forgotSuccess);
+      }
+      await api("/auth/verify-otp", { method: "POST", body: JSON.stringify({ pendingId: state.pendingId, otp }) });
+      state.pendingId = "";
+      sessionStorage.removeItem("pendingId");
+      els.otpCode.value = "";
+      toggleAuthCard("login");
+      showToast(t().toasts.registerSuccess);
+    } catch (error) { showToast(error.message); }
+  });
+}
+
+function initDashboardPage() {
+  renderMarketingContent();
+  on(els.shareAccessMode, "change", () => {
+    if (els.shareRecipientField) els.shareRecipientField.classList.toggle("hidden", els.shareAccessMode.value !== "edit");
+  });
+  on(els.sharedNoteUnlock, "click", () => {
+    const key = els.sharedNoteAccessKey.value.trim();
+    if (!key || !state.sharedPayload) return;
+    if (state.sharedPayload.canView === false) return showToast(t().toasts.invalidKey);
+    const title = decryptText(state.sharedPayload.encryptedTitle, key);
+    const content = decryptText(state.sharedPayload.encryptedContent, key);
+    if (!title || !content) return showToast(t().toasts.sharedUnlockFailed);
+    els.sharedNoteTitle.textContent = title;
+    if (els.sharedNoteTitleInput) els.sharedNoteTitleInput.value = title;
+    els.sharedNoteContent.value = content;
+    const canEdit = Boolean(state.sharedPayload.canEdit && (state.sharedPayload.isOwner || state.sharedPayload.isRecipient));
+    if (els.sharedNoteTitleInput) els.sharedNoteTitleInput.readOnly = !canEdit;
+    els.sharedNoteContent.readOnly = !canEdit;
+    if (els.sharedNoteSave) els.sharedNoteSave.classList.toggle("hidden", !canEdit);
+    showToast(t().toasts.sharedUnlockSuccess);
+  });
+  on(els.sharedNoteSave, "click", async () => {
+    try {
+      if (!state.selectedSharedNoteId) return;
+      const sharedTestKey = els.sharedNoteAccessKey.value.trim();
+      await api(`/notes/shares/${state.selectedSharedNoteId}`, {
+        method: "PUT",
+        body: JSON.stringify({ title: els.sharedNoteTitleInput.value.trim(), content: els.sharedNoteContent.value.trim(), sharedTestKey }),
+      });
+      showToast(t().toasts.shareSaved);
+      await refreshSharedNotes();
+    } catch (error) { showToast(error.message); }
+  });
+  loadSharedNote().then((shared) => {
+    if (shared) return;
+    if (!state.token || !state.user || !state.hasAuthenticatedInSession) return goToLogin();
+    if (els.userDropdownTrigger) els.userDropdownTrigger.textContent = state.user.displayName || state.user.username || "User";
+    switchScreen("dashboard-home");
+    refreshNotes();
+    refreshSharedNotes();
+    loadProfile();
+  });
+  els.sideButtons.forEach((button) => on(button, "click", async () => {
+    switchScreen(button.dataset.screen);
+    if (button.dataset.screen === "profile") await loadProfile();
+    if (button.dataset.screen === "notes" && !state.selectedNoteId) resetNoteEditorForNewEntry();
+  }));
+  on(els.userDropdownTrigger, "click", () => els.userDropdown && els.userDropdown.classList.toggle("hidden"));
+  els.dropdownActions.forEach((button) => on(button, "click", async () => {
+    const action = button.dataset.profileAction;
+    if (els.userDropdown) els.userDropdown.classList.add("hidden");
+    if (action === "profile") { state.profileAccessUnlocked = false; els.profileAccessKey.value = ""; return openModal(els.profileAccessModal); }
+    if (action === "switch" || action === "logout") { clearSession(); showToast(action === "switch" ? t().toasts.switchAccount : t().toasts.logout); goToLogin(); }
+  }));
+  document.querySelectorAll(".editor-toolbar button").forEach((button) => on(button, "click", () => { if (!state.selectedNoteId || state.notesUnlocked) document.execCommand(button.dataset.command, false, null); }));
+  on(els.noteSearch, "input", renderNotes);
+  on(els.unlockNotes, "click", () => {
+    if (state.notesUnlocked) {
+      state.notesUnlocked = false;
+      state.personalKey = "";
+      sessionStorage.removeItem("personalKey");
+      resetNoteEditorForNewEntry();
+      renderDashboardStats();
+      updateUnlockStateUI();
+      renderNotes();
+      return showToast(t().toasts.lockSuccess);
+    }
+    const defaultKey = state.personalKey || (!state.user?.hasPersonalKey ? state.tempPassword : "");
+    const key = window.prompt(t().toasts.keyPrompt, defaultKey);
+    if (!key) return;
+    if (!hasValidPersonalKey(key)) return showToast(t().toasts.invalidKey);
+    state.personalKey = key;
+    state.notesUnlocked = true;
+    sessionStorage.setItem("personalKey", key);
+    renderDashboardStats();
+    updateUnlockStateUI();
+    renderNotes();
+    if (state.selectedNoteId) {
+      const selectedNote = state.notes.find((note) => note.id === state.selectedNoteId);
+      if (!selectedNote || !canDecryptNote(selectedNote)) resetNoteEditorForNewEntry();
+    }
+    showToast(t().toasts.unlockSuccess);
+  });
+  on(els.saveNote, "click", saveNote);
+  on(els.shareNote, "click", shareSelectedNote);
+  on(els.fab, "click", () => { switchScreen("notes"); resetNoteEditorForNewEntry(); });
+  on(els.saveProfile, "click", saveProfile);
+  on(els.openSecurityPanel, "click", () => openModal(els.securityModal));
+  on(els.requestPersonalKeyOtp, "click", requestPersonalKeyOtp);
+  on(els.confirmPersonalKey, "click", confirmPersonalKeyChange);
+  on(els.securityPasswordRequest, "click", requestPasswordOtp);
+  on(els.securityPasswordConfirm, "click", confirmPasswordChange);
+  on(els.securityClose, "click", () => closeModal(els.securityModal));
+  on(els.profileAccessClose, "click", () => closeModal(els.profileAccessModal));
+  on(els.profileOtpClose, "click", () => closeModal(els.profileOtpModal));
+  on(els.profileAccessForgot, "click", requestRecoveryOtp);
+  on(els.profileOtpSubmit, "click", confirmProfileAccessOtp);
+  on(els.recoverySubmit, "click", confirmRecoveryOtp);
+  on(els.recoveryClose, "click", () => closeModal(els.recoveryModal));
+  on(els.profileAccessSubmit, "click", async () => {
+    const key = els.profileAccessKey.value.trim();
+    if (!key) return showToast(t().toasts.needProfileKey);
+    if (!hasValidPersonalKey(key)) return showToast(t().toasts.invalidKey);
+    state.personalKey = key;
+    sessionStorage.setItem("personalKey", key);
+    state.profileAccessUnlocked = true;
+    closeModal(els.profileAccessModal);
+    switchScreen("profile");
+    await loadProfile();
+  });
+  on(els.copyShareLink, "click", async () => {
+    if (!els.shareLinkOutput.value) return;
+    await navigator.clipboard.writeText(els.shareLinkOutput.value);
+    showToast(t().toasts.shareCreated);
+  });
+}
+
+initCommonEvents();
+if (page === "home") initHomePage();
+if (page === "login") initLoginPage();
+if (page === "dashboard") initDashboardPage();

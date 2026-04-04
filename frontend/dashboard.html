@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BloomNote Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+  </head>
+  <body data-page="dashboard">
+    <main class="main-shell">
+      <section class="dashboard">
+        <aside class="sidebar">
+          <div class="sidebar-logo">BloomNote</div>
+          <button class="side-btn active" data-screen="dashboard-home">Trang chủ</button>
+          <button class="side-btn" data-screen="notes">Nhật ký</button>
+          <button class="side-btn" data-screen="shared-notes">Nhật ký được chia sẻ</button>
+          <button class="side-btn" data-screen="trash">Thùng rác</button>
+        </aside>
+
+        <section class="dashboard-content">
+          <div class="dashboard-header">
+            <div>
+              <h1 id="screen-title">Tổng quan</h1>
+              <p id="screen-subtitle">Quản lý nhật ký an toàn và riêng tư.</p>
+            </div>
+            <div class="user-menu">
+              <button id="user-dropdown-trigger" class="user-badge" type="button">User</button>
+              <div id="user-dropdown" class="dropdown hidden">
+                <button data-profile-action="profile" type="button">Thông tin cá nhân</button>
+                <button data-profile-action="switch" type="button">Đổi tài khoản</button>
+                <button data-profile-action="logout" type="button">Đăng xuất</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="dashboard-home" class="screen">
+            <div class="summary-grid">
+              <div class="summary-card"><span>Nhật ký đang hoạt động</span><strong id="active-count">0</strong></div>
+              <div class="summary-card"><span>Trong thùng rác</span><strong id="trash-count">0</strong></div>
+              <div class="summary-card"><span>Trạng thái mở khóa</span><strong id="key-status">Đã khóa</strong></div>
+            </div>
+            <div class="empty-state">
+              <h3>Không gian viết dành cho bạn</h3>
+              <p>Viết nhật ký, giữ nội dung ở dạng mã hóa và chỉ mở khi bạn chủ động giải mã.</p>
+            </div>
+          </div>
+
+          <div id="notes" class="screen hidden">
+            <div class="toolbar">
+              <input id="note-search" type="text" placeholder="Tìm theo tiêu đề..." />
+              <button id="unlock-notes" class="secondary-btn" type="button">Mở khóa nhật ký</button>
+            </div>
+            <p id="notes-security-hint" class="security-hint"></p>
+            <div class="notes-layout">
+              <div id="notes-list" class="notes-list"></div>
+              <div class="editor-card">
+                <div class="field"><label>Tiêu đề</label><input id="note-title" type="text" /></div>
+                <div class="editor-toolbar">
+                  <button data-command="bold" type="button"><b>B</b></button>
+                  <button data-command="italic" type="button"><i>I</i></button>
+                  <button data-command="justifyLeft" type="button">Trái</button>
+                  <button data-command="justifyCenter" type="button">Giữa</button>
+                  <button data-command="justifyRight" type="button">Phải</button>
+                </div>
+                <div id="note-editor" class="editor" contenteditable="true"></div>
+                <div class="editor-actions">
+                  <button id="save-note" class="primary-btn" type="button">Lưu nhật ký</button>
+                  <button id="share-note" class="secondary-btn" type="button">Chia sẻ</button>
+                </div>
+                <div id="share-link-panel" class="share-panel hidden">
+                  <div class="field">
+                    <label>Quyền chia sẻ</label>
+                    <select id="share-access-mode">
+                      <option value="view">Chỉ xem</option>
+                      <option value="edit">Cho chỉnh sửa</option>
+                    </select>
+                  </div>
+                  <div id="share-recipient-field" class="field hidden">
+                    <label>Tài khoản người nhận</label>
+                    <input id="share-recipient" type="text" placeholder="Email hoặc tên người dùng" />
+                  </div>
+                  <div class="field">
+                    <label>Link chia sẻ</label>
+                    <div class="share-row">
+                      <input id="share-link-output" type="text" readonly />
+                      <button id="copy-share-link" class="secondary-btn" type="button">Sao chép</button>
+                    </div>
+                  </div>
+                  <p id="share-status" class="security-hint">Mỗi lần chia sẻ cần dùng một khóa kiểm thử mới.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="shared-notes" class="screen hidden">
+            <div class="shared-grid">
+              <section class="shared-column panel-shell">
+                <div class="shared-heading">
+                  <h3>Người khác chia sẻ cho tôi</h3>
+                  <p>Xem, chỉnh sửa hoặc ẩn nhật ký được chia sẻ.</p>
+                </div>
+                <div id="shared-with-me-list" class="notes-list"></div>
+              </section>
+              <section class="shared-column panel-shell">
+                <div class="shared-heading">
+                  <h3>Tôi đã chia sẻ</h3>
+                  <p>Quản lý quyền xem, quyền sửa và link chia sẻ.</p>
+                </div>
+                <div id="shared-by-me-list" class="notes-list"></div>
+              </section>
+            </div>
+          </div>
+
+          <div id="trash" class="screen hidden">
+            <h3>Thùng rác 30 ngày</h3>
+            <p>Nội dung trong thùng rác vẫn giữ nguyên ở dạng mã hóa trước khi bị xóa vĩnh viễn.</p>
+            <div id="trash-list" class="notes-list trash-list"></div>
+          </div>
+
+          <div id="profile" class="screen hidden">
+            <div class="profile-grid">
+              <div class="field"><label>Tên hiển thị</label><input id="profile-display-name" type="text" /></div>
+              <div class="field"><label>Tên người dùng</label><input id="profile-username" type="text" readonly /></div>
+              <div class="field"><label>Ngày sinh</label><input id="profile-birth-date" type="date" /></div>
+              <div class="field"><label>Email</label><input id="profile-email" type="email" readonly /></div>
+              <div class="field">
+                <label>Giới tính</label>
+                <select id="profile-gender">
+                  <option value="">Chọn</option>
+                  <option value="Nam">Nam</option>
+                  <option value="Nữ">Nữ</option>
+                  <option value="Khác">Khác</option>
+                </select>
+              </div>
+            </div>
+            <div class="editor-actions">
+              <button id="save-profile" class="primary-btn" type="button">Lưu thông tin</button>
+              <button id="open-security-panel" class="secondary-btn" type="button">Quản lý bảo mật</button>
+            </div>
+          </div>
+
+          <div id="share-view" class="screen hidden">
+            <div class="shared-note-shell panel-shell">
+              <div class="shared-note-head">
+                <div>
+                  <h3 id="shared-note-title">Shared Note</h3>
+                  <p id="shared-note-key">Nhập khóa kiểm thử để mở ghi chú được chia sẻ.</p>
+                </div>
+                <div class="shared-note-actions">
+                  <button id="shared-note-unlock" class="secondary-btn" type="button">Mở ghi chú</button>
+                  <button id="shared-note-save" class="primary-btn hidden" type="button">Lưu thay đổi</button>
+                </div>
+              </div>
+              <div class="field">
+                <label>Khóa kiểm thử</label>
+                <div class="share-row">
+                  <input id="shared-note-access-key" type="password" placeholder="Nhập khóa được người gửi cung cấp." />
+                </div>
+              </div>
+              <div class="field">
+                <label>Tiêu đề</label>
+                <input id="shared-note-title-input" type="text" readonly />
+              </div>
+              <div class="field">
+                <label>Nội dung</label>
+                <textarea id="shared-note-content" rows="16" readonly></textarea>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <button id="create-note-fab" class="fab hidden" type="button">+</button>
+      </section>
+    </main>
+
+    <div id="profile-access-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>Mở thông tin cá nhân</h3>
+        <p>Nhập khóa cá nhân để xem hồ sơ. Nếu chưa đổi khóa, mặc định khóa cá nhân là mật khẩu tài khoản lúc tạo.</p>
+        <div class="field">
+          <label>Khóa cá nhân</label>
+          <input id="profile-access-key" type="password" placeholder="Nhập khóa cá nhân" />
+        </div>
+        <div class="modal-actions">
+          <button id="profile-access-submit" class="primary-btn" type="button">Mở hồ sơ</button>
+          <button id="profile-access-forgot" class="secondary-btn" type="button">Quên mật khẩu</button>
+          <button id="profile-access-close" class="text-btn" type="button">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="profile-otp-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>Xác thực OTP hồ sơ</h3>
+        <p>Nhập OTP đã gửi về email để mở hồ sơ cá nhân.</p>
+        <div class="field">
+          <label>OTP</label>
+          <input id="profile-access-otp" type="text" maxlength="6" placeholder="Nhập mã OTP" />
+        </div>
+        <div class="modal-actions">
+          <button id="profile-otp-submit" class="primary-btn" type="button">Xác nhận</button>
+          <button id="profile-otp-close" class="text-btn" type="button">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="recovery-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>Cấp lại khóa</h3>
+        <p>Nhập OTP đã gửi về email và mật khẩu mới để cấp lại khóa cá nhân.</p>
+        <div class="field">
+          <label>OTP</label>
+          <input id="recovery-otp" type="text" maxlength="6" placeholder="Nhập mã OTP" />
+        </div>
+        <div class="field">
+          <label>Mật khẩu mới</label>
+          <input id="recovery-new-password" type="password" placeholder="Nhập mật khẩu mới" />
+        </div>
+        <div class="modal-actions">
+          <button id="recovery-submit" class="primary-btn" type="button">Xác nhận</button>
+          <button id="recovery-close" class="text-btn" type="button">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="security-modal" class="modal-overlay hidden">
+      <div class="modal-card modal-card-wide">
+        <h3>Quản lý bảo mật</h3>
+        <div class="security-grid">
+          <section class="security-section">
+            <h4>Đổi mật khẩu đăng nhập</h4>
+            <div class="field">
+              <label>Mật khẩu mới</label>
+              <input id="security-new-password" type="password" />
+            </div>
+            <div class="field">
+              <label>OTP xác nhận</label>
+              <input id="security-password-otp" type="text" maxlength="6" />
+            </div>
+            <div class="modal-actions">
+              <button id="security-password-request" class="secondary-btn" type="button">Gửi OTP</button>
+              <button id="security-password-confirm" class="primary-btn" type="button">Đổi mật khẩu</button>
+            </div>
+          </section>
+          <section class="security-section">
+            <h4>Đổi khóa cá nhân</h4>
+            <div class="field">
+              <label>Khóa cá nhân mới</label>
+              <input id="profile-new-personal-key" type="password" />
+            </div>
+            <div class="field">
+              <label>OTP xác nhận</label>
+              <input id="profile-personal-key-otp" type="text" maxlength="6" />
+            </div>
+            <div class="modal-actions">
+              <button id="request-personal-key-otp" class="secondary-btn" type="button">Gửi OTP</button>
+              <button id="confirm-personal-key" class="primary-btn" type="button">Đổi khóa cá nhân</button>
+            </div>
+          </section>
+        </div>
+        <div class="modal-actions">
+          <button id="security-close" class="text-btn" type="button">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -6,14 +6,11 @@
     <title>BloomNote</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
-    <script src="./assets/crypto-js.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
   </head>
-  <body>
+  <body data-page="home">
     <div id="app">
       <header class="topbar">
         <button id="brand-home" class="brand brand-btn" type="button">BloomNote</button>
@@ -26,225 +23,71 @@
         </nav>
       </header>
 
-      <main class="main-shell">
-        <section id="public-view" class="public-page">
-          <section id="home" class="landing-section hero-section">
-            <div class="hero-copy panel-shell">
-              <p id="home-kicker" class="section-kicker"></p>
-              <h1 id="home-title"></h1>
-              <p id="home-text" class="hero-text"></p>
-              <div id="hero-tags" class="hero-tags"></div>
-              <div class="hero-actions">
-                <button id="hero-about" class="primary-btn" type="button">Khám phá thêm</button>
-                <button id="hero-login" class="secondary-btn" type="button">Mở khu đăng nhập</button>
-              </div>
+      <main class="main-shell public-page">
+        <section id="home" class="landing-section hero-section">
+          <div class="hero-copy panel-shell">
+            <p id="home-kicker" class="section-kicker"></p>
+            <h1 id="home-title"></h1>
+            <p id="home-text" class="hero-text"></p>
+            <div id="hero-tags" class="hero-tags"></div>
+            <div class="hero-actions">
+              <button id="hero-about" class="primary-btn" type="button">Khám phá thêm</button>
+              <button id="hero-login" class="secondary-btn" type="button">Mở khu đăng nhập</button>
             </div>
-            <div class="hero-feature panel-shell">
-              <div class="feature-card feature-card-main">
-                <span class="feature-label">Không gian riêng tư</span>
-                <h3>Nhật ký được viết trong một giao diện nhẹ, ấm và tập trung.</h3>
-                <p id="feature-home-copy"></p>
-              </div>
-              <div class="feature-grid">
-                <div class="feature-card">
-                  <span class="feature-label">Bảo mật</span>
-                  <p id="feature-encryption"></p>
-                </div>
-                <div class="feature-card">
-                  <span class="feature-label">Kích hoạt</span>
-                  <p id="feature-otp"></p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section id="intro" class="landing-section info-section">
-            <div class="section-heading">
-              <p id="intro-kicker" class="section-kicker"></p>
-              <h2 id="intro-title"></h2>
-            </div>
-            <div class="info-grid">
-              <article class="info-card panel-shell">
-                <h3 id="intro-card-title-1"></h3>
-                <p id="intro-card-text-1"></p>
-              </article>
-              <article class="info-card panel-shell">
-                <h3 id="intro-card-title-2"></h3>
-                <p id="intro-card-text-2"></p>
-              </article>
-              <article class="info-card panel-shell">
-                <h3 id="intro-card-title-3"></h3>
-                <p id="intro-card-text-3"></p>
-              </article>
-            </div>
-          </section>
-
-          <section id="about" class="landing-section about-section">
-            <div class="about-panel panel-shell">
-              <div>
-                <p id="about-kicker" class="section-kicker"></p>
-                <h2 id="about-title"></h2>
-              </div>
-              <p id="about-text" class="about-text"></p>
-            </div>
-            <div class="about-stats">
-              <div class="stat-card panel-shell"><strong>01</strong><span id="about-stat-1"></span></div>
-              <div class="stat-card panel-shell"><strong>02</strong><span id="about-stat-2"></span></div>
-              <div class="stat-card panel-shell"><strong>03</strong><span id="about-stat-3"></span></div>
-            </div>
-          </section>
-        </section>
-
-        <section id="auth-view" class="auth-page hidden">
-          <div class="auth-hero panel-shell">
-            <p id="auth-kicker" class="section-kicker"></p>
-            <h2 id="auth-title"></h2>
-            <p id="auth-text"></p>
-            <div id="auth-tags" class="hero-tags"></div>
-            <button id="auth-back-home" class="secondary-btn" type="button">Về trang chủ</button>
           </div>
-
-          <div class="auth-panel">
-            <div id="login-card" class="card panel-shell">
-              <h2 id="login-heading"></h2>
-              <div class="field">
-                <label id="login-identifier-label"></label>
-                <input id="login-identifier" type="text" placeholder="you@example.com" />
-              </div>
-              <div class="field">
-                <label id="login-password-label"></label>
-                <div class="password-wrap">
-                  <input id="login-password" type="password" placeholder="********" />
-                  <button id="toggle-password" class="ghost-btn" type="button">Hiện</button>
-                </div>
-              </div>
-              <button id="login-submit" class="primary-btn" type="button"></button>
-              <button id="forgot-password" class="text-btn" type="button"></button>
-              <p><span id="register-prompt"></span> <button id="go-register" class="text-btn inline-btn" type="button"></button></p>
+          <div class="hero-feature panel-shell">
+            <div class="feature-card feature-card-main">
+              <span class="feature-label">Không gian riêng tư</span>
+              <h3>Nhật ký được viết trong một giao diện nhẹ, ấm và tập trung.</h3>
+              <p id="feature-home-copy"></p>
             </div>
-
-            <div id="register-card" class="card panel-shell hidden">
-              <h2 id="register-heading"></h2>
-              <div class="field">
-                <label id="register-username-label"></label>
-                <input id="register-username" type="text" />
+            <div class="feature-grid">
+              <div class="feature-card">
+                <span class="feature-label">Bảo mật</span>
+                <p id="feature-encryption"></p>
               </div>
-              <div class="field">
-                <label id="register-email-label"></label>
-                <input id="register-email" type="email" />
+              <div class="feature-card">
+                <span class="feature-label">Kích hoạt</span>
+                <p id="feature-otp"></p>
               </div>
-              <div class="field">
-                <label id="register-password-label"></label>
-                <input id="register-password" type="password" />
-              </div>
-              <button id="register-submit" class="primary-btn" type="button"></button>
-              <p><span id="login-prompt"></span> <button id="go-login" class="text-btn inline-btn" type="button"></button></p>
-            </div>
-
-            <div id="otp-card" class="card panel-shell hidden">
-              <h2 id="otp-heading"></h2>
-              <p id="otp-text"></p>
-              <div class="field">
-                <label>OTP</label>
-                <input id="otp-code" type="text" maxlength="6" />
-              </div>
-              <button id="otp-submit" class="primary-btn" type="button"></button>
             </div>
           </div>
         </section>
 
-        <section id="dashboard-view" class="dashboard hidden">
-          <aside class="sidebar">
-            <div class="sidebar-logo">BloomNote</div>
-            <button class="side-btn active" data-screen="dashboard-home">Trang chủ</button>
-            <button class="side-btn" data-screen="notes">Nhật ký</button>
-            <button class="side-btn" data-screen="trash">Thùng rác</button>
-          </aside>
+        <section id="intro" class="landing-section info-section">
+          <div class="section-heading">
+            <p id="intro-kicker" class="section-kicker"></p>
+            <h2 id="intro-title"></h2>
+          </div>
+          <div class="info-grid">
+            <article class="info-card panel-shell">
+              <h3 id="intro-card-title-1"></h3>
+              <p id="intro-card-text-1"></p>
+            </article>
+            <article class="info-card panel-shell">
+              <h3 id="intro-card-title-2"></h3>
+              <p id="intro-card-text-2"></p>
+            </article>
+            <article class="info-card panel-shell">
+              <h3 id="intro-card-title-3"></h3>
+              <p id="intro-card-text-3"></p>
+            </article>
+          </div>
+        </section>
 
-          <section class="dashboard-content">
-            <div class="dashboard-header">
-              <div>
-                <h1 id="screen-title">Tổng quan</h1>
-                <p id="screen-subtitle">Quản lý nhật ký an toàn và riêng tư.</p>
-              </div>
-              <div class="user-menu">
-                <button id="user-dropdown-trigger" class="user-badge" type="button">User</button>
-                <div id="user-dropdown" class="dropdown hidden">
-                  <button data-profile-action="profile" type="button">Thông tin cá nhân</button>
-                  <button data-profile-action="switch" type="button">Đổi tài khoản</button>
-                  <button data-profile-action="logout" type="button">Đăng xuất</button>
-                </div>
-              </div>
+        <section id="about" class="landing-section about-section">
+          <div class="about-panel panel-shell">
+            <div>
+              <p id="about-kicker" class="section-kicker"></p>
+              <h2 id="about-title"></h2>
             </div>
-
-            <div id="dashboard-home" class="screen">
-              <div class="summary-grid">
-                <div class="summary-card"><span>Nhật ký đang hoạt động</span><strong id="active-count">0</strong></div>
-                <div class="summary-card"><span>Trong thùng rác</span><strong id="trash-count">0</strong></div>
-                <div class="summary-card"><span>Trạng thái mở khóa</span><strong id="key-status">Đã khóa</strong></div>
-              </div>
-              <div class="empty-state">
-                <h3>Không gian viết dành cho bạn</h3>
-                <p>Viết nhật ký, giữ nội dung ở dạng mã hóa và chỉ mở khi bạn chủ động giải mã.</p>
-              </div>
-            </div>
-
-            <div id="notes" class="screen hidden">
-              <div class="toolbar">
-                <input id="note-search" type="text" placeholder="Tìm theo tiêu đề..." />
-                <button id="unlock-notes" class="secondary-btn" type="button">Mở khóa nhật ký</button>
-              </div>
-              <p id="notes-security-hint" class="security-hint"></p>
-              <div class="notes-layout">
-                <div id="notes-list" class="notes-list"></div>
-                <div class="editor-card">
-                  <div class="field"><label>Tiêu đề</label><input id="note-title" type="text" /></div>
-                  <div class="editor-toolbar">
-                    <button data-command="bold" type="button"><b>B</b></button>
-                    <button data-command="italic" type="button"><i>I</i></button>
-                    <button data-command="justifyLeft" type="button">Trái</button>
-                    <button data-command="justifyCenter" type="button">Giữa</button>
-                    <button data-command="justifyRight" type="button">Phải</button>
-                  </div>
-                  <div id="note-editor" class="editor" contenteditable="true"></div>
-                  <div class="editor-actions">
-                    <button id="save-note" class="primary-btn" type="button">Lưu nhật ký</button>
-                    <button id="share-note" class="secondary-btn" type="button">Chia sẻ</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div id="trash" class="screen hidden">
-              <h3>Thùng rác 30 ngày</h3>
-              <p>Nội dung trong thùng rác vẫn giữ nguyên ở dạng mã hóa trước khi bị xóa vĩnh viễn.</p>
-              <div id="trash-list" class="notes-list trash-list"></div>
-            </div>
-
-            <div id="profile" class="screen hidden">
-              <div class="profile-grid">
-                <div class="field"><label>Tên hiển thị</label><input id="profile-display-name" type="text" /></div>
-                <div class="field"><label>Ngày sinh</label><input id="profile-birth-date" type="date" /></div>
-                <div class="field"><label>Email</label><input id="profile-email" type="email" /></div>
-                <div class="field">
-                  <label>Giới tính</label>
-                  <select id="profile-gender">
-                    <option value="">Chọn</option><option value="Nam">Nam</option><option value="Nữ">Nữ</option><option value="Khác">Khác</option>
-                  </select>
-                </div>
-                <div class="field full-span"><label>Khóa cá nhân</label><input id="profile-personal-key" type="password" placeholder="Nếu chưa có, bạn có thể dùng lại mật khẩu đăng nhập làm khóa tạm thời." /></div>
-              </div>
-              <button id="save-profile" class="primary-btn" type="button">Lưu thông tin</button>
-            </div>
-
-            <div id="share-view" class="screen hidden">
-              <h3 id="shared-note-title">Shared Note</h3>
-              <p id="shared-note-key"></p>
-              <textarea id="shared-note-content" rows="10" readonly></textarea>
-            </div>
-          </section>
-
-          <button id="create-note-fab" class="fab hidden" type="button">+</button>
+            <p id="about-text" class="about-text"></p>
+          </div>
+          <div class="about-stats">
+            <div class="stat-card panel-shell"><strong>01</strong><span id="about-stat-1"></span></div>
+            <div class="stat-card panel-shell"><strong>02</strong><span id="about-stat-2"></span></div>
+            <div class="stat-card panel-shell"><strong>03</strong><span id="about-stat-3"></span></div>
+          </div>
         </section>
       </main>
     </div>

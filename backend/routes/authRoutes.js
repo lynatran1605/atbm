@@ -1,14 +1,18 @@
 ﻿const express = require("express");
-const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const { sendOtpEmail } = require("../../services/emailService");
+const { hashPassword, verifyPassword } = require("../utils/passwords");
 
 function createAuthRoutes({ admin, db }) {
   const router = express.Router();
 
   function getBaseUrl(req) {
     return req.app?.locals?.baseUrl || process.env.APP_BASE_URL || "http://localhost:3000";
+  }
+
+  function getLoginUrl(req) {
+    return `${getBaseUrl(req)}/login.html`;
   }
 
   router.post("/register", async (req, res) => {
@@ -26,7 +30,7 @@ function createAuthRoutes({ admin, db }) {
         return res.status(409).json({ message: "Username or email already exists." });
       }
 
-      const passwordHash = await bcrypt.hash(password, 10);
+      const passwordHash = await hashPassword(password);
       const otp = String(Math.floor(100000 + Math.random() * 900000));
       const pendingId = uuidv4();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -35,6 +39,10 @@ function createAuthRoutes({ admin, db }) {
         username,
         email,
         passwordHash,
+        personalKeyHash: "",
+        personalKeyHint: "",
+        personalKeyCheckCipher: "",
+        personalKeyConfigured: false,
         otp,
         expiresAt,
         createdAt: new Date().toISOString(),
@@ -83,7 +91,10 @@ function createAuthRoutes({ admin, db }) {
         displayName: pendingUser.username,
         birthDate: "",
         gender: "",
-        personalKeyHint: "",
+        personalKeyHash: pendingUser.personalKeyHash || "",
+        personalKeyHint: pendingUser.personalKeyHint || "",
+        personalKeyCheckCipher: pendingUser.personalKeyCheckCipher || "",
+        personalKeyConfigured: Boolean(pendingUser.personalKeyConfigured),
         createdAt: new Date().toISOString(),
       });
 
@@ -92,6 +103,41 @@ function createAuthRoutes({ admin, db }) {
       return res.json({ message: "Account verified successfully. Please log in." });
     } catch (error) {
       return res.status(500).json({ message: error.message || "Unable to verify OTP." });
+    }
+  });
+
+  router.post("/resend-otp", async (req, res) => {
+    try {
+      const { pendingId } = req.body;
+      if (!pendingId) {
+        return res.status(400).json({ message: "Pending ID is required." });
+      }
+
+      const pendingRef = db.collection("pendingUsers").doc(pendingId);
+      const pendingDoc = await pendingRef.get();
+
+      if (!pendingDoc.exists) {
+        return res.status(404).json({ message: "Pending registration not found." });
+      }
+
+      const pendingUser = pendingDoc.data();
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      await pendingRef.update({
+        otp,
+        expiresAt,
+        updatedAt: new Date().toISOString(),
+      });
+
+      await sendOtpEmail(pendingUser.email, otp, pendingUser.username);
+
+      return res.json({
+        message: "OTP resent successfully.",
+        pendingId,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to resend OTP." });
     }
   });
 
@@ -113,10 +159,18 @@ function createAuthRoutes({ admin, db }) {
 
       const userDoc = snapshot.docs[0];
       const user = userDoc.data();
-      const isMatch = await bcrypt.compare(password, user.passwordHash);
+      const isMatch = await verifyPassword(password, user.passwordHash);
+      const hasPersonalKey = Boolean(user.personalKeyConfigured);
 
       if (!isMatch) {
         return res.status(401).json({ message: "Incorrect password." });
+      }
+
+      if (typeof user.passwordHash === "string" && user.passwordHash.startsWith("$2")) {
+        await userDoc.ref.update({
+          passwordHash: await hashPassword(password),
+          updatedAt: new Date().toISOString(),
+        });
       }
 
       const token = jwt.sign(
@@ -141,6 +195,8 @@ function createAuthRoutes({ admin, db }) {
           birthDate: user.birthDate || "",
           gender: user.gender || "",
           personalKeyHint: user.personalKeyHint || "",
+          hasPersonalKey,
+          personalKeyCheckCipher: user.personalKeyCheckCipher || "",
         },
       });
     } catch (error) {
@@ -160,12 +216,94 @@ function createAuthRoutes({ admin, db }) {
         return res.status(404).json({ message: "Email does not exist." });
       }
 
-      const link = `${getBaseUrl(req)}#login`;
+      const userDoc = snapshot.docs[0];
+      const user = userDoc.data();
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const requestId = uuidv4();
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      await db.collection("passwordResetRequests").doc(requestId).set({
+        requestId,
+        uid: user.uid,
+        email: user.email,
+        otp,
+        expiresAt,
+        createdAt: new Date().toISOString(),
+      });
+
+      await sendOtpEmail(user.email, otp, user.username, {
+        subject: "BloomNote - OTP reset password",
+        heading: "BloomNote Password Reset",
+        intro: `Xin chao ${user.displayName || user.username || "ban"},`,
+        message: "Nhap ma OTP ben duoi de dat lai mat khau dang nhap cua ban:",
+        footer: "OTP co hieu luc trong 10 phut. Neu ban khong yeu cau doi mat khau, hay bo qua email nay.",
+      });
+
       return res.json({
-        message: `Password reset flow can be connected here. For now, return to ${link} and log in with your account.`,
+        message: "OTP sent to your email successfully.",
+        requestId,
+        email: user.email,
+        loginUrl: getLoginUrl(req),
       });
     } catch (error) {
       return res.status(500).json({ message: error.message || "Unable to start password reset." });
+    }
+  });
+
+  router.post("/forgot-password/verify", async (req, res) => {
+    try {
+      const { requestId, otp, newPassword } = req.body;
+      if (!requestId || !otp || !newPassword) {
+        return res.status(400).json({ message: "Request ID, OTP, and new password are required." });
+      }
+
+      const requestRef = db.collection("passwordResetRequests").doc(requestId);
+      const requestDoc = await requestRef.get();
+
+      if (!requestDoc.exists) {
+        return res.status(404).json({ message: "Password reset request not found." });
+      }
+
+      const resetRequest = requestDoc.data();
+      if (resetRequest.otp !== otp) {
+        return res.status(400).json({ message: "Invalid OTP." });
+      }
+
+      if (new Date(resetRequest.expiresAt).getTime() < Date.now()) {
+        return res.status(400).json({ message: "OTP has expired." });
+      }
+
+      const passwordHash = await hashPassword(newPassword);
+      const userRef = db.collection("users").doc(resetRequest.uid);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      const user = userDoc.data();
+      const updates = {
+        passwordHash,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (!user.personalKeyConfigured) {
+        updates.personalKeyHash = "";
+        updates.personalKeyHint = "";
+        updates.personalKeyCheckCipher = "";
+        updates.personalKeyConfigured = false;
+      }
+
+      await userRef.update(updates);
+
+      await requestRef.delete();
+
+      return res.json({
+        message: "Password reset successfully. Please log in with your new password.",
+        loginUrl: getLoginUrl(req),
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to verify password reset OTP." });
     }
   });
 

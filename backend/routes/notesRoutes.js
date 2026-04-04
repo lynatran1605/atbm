@@ -1,6 +1,7 @@
-﻿const express = require("express");
+const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const { encryptDiaryContent } = require("../../services/encryptionService");
+const { hashPassword, verifyPassword } = require("../utils/passwords");
 const { isExpired } = require("../../utils/date");
 
 function createNotesRoutes({ db }) {
@@ -8,6 +9,31 @@ function createNotesRoutes({ db }) {
 
   function getBaseUrl(req) {
     return req.app?.locals?.baseUrl || process.env.APP_BASE_URL || "http://localhost:3000";
+  }
+
+  function getDashboardUrl(req) {
+    return `${getBaseUrl(req)}/dashboard.html`;
+  }
+
+  function serializeSharedNote(doc) {
+    const share = doc.data();
+    return {
+      id: doc.id,
+      noteId: share.noteId,
+      ownerId: share.ownerId,
+      ownerName: share.ownerName || "",
+      recipientId: share.recipientId || "",
+      recipientName: share.recipientName || "",
+      accessMode: share.accessMode || "view",
+      canView: share.canView !== false,
+      canEdit: Boolean(share.canEdit),
+      recipientRemoved: Boolean(share.recipientRemoved),
+      encryptedTitle: share.encryptedTitle || "",
+      encryptedContent: share.encryptedContent || "",
+      shareLink: share.shareLink || "",
+      createdAt: share.createdAt || "",
+      updatedAt: share.updatedAt || "",
+    };
   }
 
   async function cleanupExpiredTrash() {
@@ -26,17 +52,15 @@ function createNotesRoutes({ db }) {
   router.get("/", async (req, res) => {
     try {
       await cleanupExpiredTrash();
-      const query = (req.query.q || "").toLowerCase();
       const includeTrash = String(req.query.includeTrash || "false") === "true";
       const snapshot = await db.collection("notes").where("ownerId", "==", req.user.uid).get();
       const notes = [];
 
       snapshot.forEach((doc) => {
         const note = doc.data();
-        const matches = !query || note.title.toLowerCase().includes(query);
         const visibilityMatch = includeTrash ? note.isDeleted : !note.isDeleted;
 
-        if (matches && visibilityMatch) {
+        if (visibilityMatch) {
           notes.push({ id: doc.id, ...note });
         }
       });
@@ -56,17 +80,15 @@ function createNotesRoutes({ db }) {
       }
 
       const id = uuidv4();
-      const encryptedContent = encryptDiaryContent(content, encryptionKey);
       const now = new Date().toISOString();
       const note = {
         id,
         ownerId: req.user.uid,
-        title,
-        encryptedContent,
+        title: "",
+        encryptedTitle: encryptDiaryContent(title, encryptionKey),
+        encryptedContent: encryptDiaryContent(content, encryptionKey),
         isDeleted: false,
         deletedAt: "",
-        shareToken: "",
-        sharedTestKey: "",
         createdAt: now,
         updatedAt: now,
       };
@@ -91,8 +113,13 @@ function createNotesRoutes({ db }) {
       }
 
       const updates = { updatedAt: new Date().toISOString() };
-      if (title) updates.title = title;
-      if (content && encryptionKey) updates.encryptedContent = encryptDiaryContent(content, encryptionKey);
+      if (title !== undefined && encryptionKey) {
+        updates.title = "";
+        updates.encryptedTitle = encryptDiaryContent(title, encryptionKey);
+      }
+      if (content !== undefined && encryptionKey) {
+        updates.encryptedContent = encryptDiaryContent(content, encryptionKey);
+      }
 
       await noteRef.update(updates);
       const updatedDoc = await noteRef.get();
@@ -110,7 +137,7 @@ function createNotesRoutes({ db }) {
       if (!doc.exists) return res.status(404).json({ message: "Note not found." });
       const note = doc.data();
       if (note.ownerId !== req.user.uid) {
-        return res.status(403).json({ message: "You do not have permission to delete this note." });
+        return res.status(403).json({ message: "You do not have permission to delete note." });
       }
 
       await noteRef.update({
@@ -133,7 +160,7 @@ function createNotesRoutes({ db }) {
       if (!doc.exists) return res.status(404).json({ message: "Note not found." });
       const note = doc.data();
       if (note.ownerId !== req.user.uid) {
-        return res.status(403).json({ message: "You do not have permission to restore this note." });
+        return res.status(403).json({ message: "You do not have permission to restore note." });
       }
 
       await noteRef.update({
@@ -151,6 +178,7 @@ function createNotesRoutes({ db }) {
 
   router.post("/:id/share", async (req, res) => {
     try {
+      const { sharedTitle, sharedContent, sharedTestKey, accessMode = "view", recipientIdentifier = "" } = req.body;
       const noteRef = db.collection("notes").doc(req.params.id);
       const doc = await noteRef.get();
 
@@ -159,23 +187,226 @@ function createNotesRoutes({ db }) {
       if (note.ownerId !== req.user.uid) {
         return res.status(403).json({ message: "You do not have permission to share this note." });
       }
+      if (!sharedTitle || !sharedContent || !sharedTestKey) {
+        return res.status(400).json({ message: "Shared title, content, and test key are required." });
+      }
+      if (!["view", "edit"].includes(accessMode)) {
+        return res.status(400).json({ message: "Access mode is invalid." });
+      }
 
       const shareToken = uuidv4();
-      const sharedTestKey = req.body.sharedTestKey || "";
+      const noteId = note.id || req.params.id;
+      let recipientId = "";
+      let recipientName = "";
 
-      await noteRef.update({
+      if (accessMode === "edit") {
+        if (!recipientIdentifier.trim()) {
+          return res.status(400).json({ message: "Recipient account is required for edit access." });
+        }
+
+        let recipientSnapshot = await db.collection("users").where("email", "==", recipientIdentifier.trim()).limit(1).get();
+        if (recipientSnapshot.empty) {
+          recipientSnapshot = await db.collection("users").where("username", "==", recipientIdentifier.trim()).limit(1).get();
+        }
+        if (recipientSnapshot.empty) {
+          return res.status(404).json({ message: "Recipient account not found." });
+        }
+
+        const recipient = recipientSnapshot.docs[0].data();
+        recipientId = recipient.uid;
+        recipientName = recipient.displayName || recipient.username || recipient.email;
+      }
+
+      const ownerSnapshot = await db.collection("users").doc(req.user.uid).get();
+      const owner = ownerSnapshot.exists ? ownerSnapshot.data() : null;
+      const shareLink = `${getDashboardUrl(req)}#share/${shareToken}`;
+
+      await db.collection("noteShares").doc(shareToken).set({
+        id: shareToken,
+        ownerId: req.user.uid,
+        ownerName: owner?.displayName || owner?.username || req.user.username || "",
+        noteId,
         shareToken,
-        sharedTestKey,
+        encryptedTitle: encryptDiaryContent(sharedTitle, sharedTestKey),
+        encryptedContent: encryptDiaryContent(sharedContent, sharedTestKey),
+        sharedKeyHash: await hashPassword(sharedTestKey),
+        accessMode,
+        recipientId,
+        recipientName,
+        canView: true,
+        canEdit: accessMode === "edit",
+        recipientRemoved: false,
+        shareLink,
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
       return res.json({
-        shareLink: `${getBaseUrl(req)}#share/${shareToken}`,
-        encryptedContent: note.encryptedContent,
-        testKey: sharedTestKey,
+        shareId: shareToken,
+        shareLink,
       });
     } catch (error) {
       return res.status(500).json({ message: error.message || "Unable to share note." });
+    }
+  });
+
+  router.get("/shared-by-me", async (req, res) => {
+    try {
+      const snapshot = await db.collection("noteShares").where("ownerId", "==", req.user.uid).get();
+      const shares = snapshot.docs.map(serializeSharedNote).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      return res.json(shares);
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to load shared notes." });
+    }
+  });
+
+  router.get("/shared-with-me", async (req, res) => {
+    try {
+      const snapshot = await db.collection("noteShares").where("recipientId", "==", req.user.uid).get();
+      const shares = snapshot.docs
+        .map(serializeSharedNote)
+        .filter((share) => !share.recipientRemoved)
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      return res.json(shares);
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to load notes shared with you." });
+    }
+  });
+
+  router.get("/shares/:shareId", async (req, res) => {
+    try {
+      const shareDoc = await db.collection("noteShares").doc(req.params.shareId).get();
+      if (!shareDoc.exists) {
+        return res.status(404).json({ message: "Shared note not found." });
+      }
+
+      const share = serializeSharedNote(shareDoc);
+      const isOwner = share.ownerId === req.user.uid;
+      const isRecipient = share.recipientId === req.user.uid;
+
+      if (!isOwner && !isRecipient) {
+        return res.status(403).json({ message: "You do not have permission to access this shared note." });
+      }
+
+      return res.json({
+        ...share,
+        isOwner,
+        isRecipient,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to load shared note details." });
+    }
+  });
+
+  router.put("/shares/:shareId", async (req, res) => {
+    try {
+      const { title, content, sharedTestKey } = req.body;
+      const shareRef = db.collection("noteShares").doc(req.params.shareId);
+      const shareDoc = await shareRef.get();
+
+      if (!shareDoc.exists) {
+        return res.status(404).json({ message: "Shared note not found." });
+      }
+
+      const share = shareDoc.data();
+      const isOwner = share.ownerId === req.user.uid;
+      const isRecipient = share.recipientId === req.user.uid;
+      if (!isOwner && !isRecipient) {
+        return res.status(403).json({ message: "You do not have permission to edit this shared note." });
+      }
+      if (!share.canEdit) {
+        return res.status(403).json({ message: "Edit access has been disabled by the owner." });
+      }
+      if (!title || !content || !sharedTestKey) {
+        return res.status(400).json({ message: "Title, content, and shared key are required." });
+      }
+
+      const keyOk = await verifyPassword(sharedTestKey, share.sharedKeyHash);
+      if (!keyOk) {
+        return res.status(401).json({ message: "Shared key is incorrect." });
+      }
+
+      await shareRef.update({
+        encryptedTitle: encryptDiaryContent(title, sharedTestKey),
+        encryptedContent: encryptDiaryContent(content, sharedTestKey),
+        updatedAt: new Date().toISOString(),
+      });
+
+      const updatedDoc = await shareRef.get();
+      return res.json(serializeSharedNote(updatedDoc));
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to update shared note." });
+    }
+  });
+
+  router.patch("/shares/:shareId/access", async (req, res) => {
+    try {
+      const { canView, canEdit } = req.body;
+      const shareRef = db.collection("noteShares").doc(req.params.shareId);
+      const shareDoc = await shareRef.get();
+      if (!shareDoc.exists) {
+        return res.status(404).json({ message: "Shared note not found." });
+      }
+
+      const share = shareDoc.data();
+      if (share.ownerId !== req.user.uid) {
+        return res.status(403).json({ message: "Only the owner can update access." });
+      }
+
+      const updates = {
+        updatedAt: new Date().toISOString(),
+      };
+      if (canView !== undefined) updates.canView = Boolean(canView);
+      if (canEdit !== undefined) updates.canEdit = Boolean(canEdit) && share.accessMode === "edit";
+
+      await shareRef.update(updates);
+      const updatedDoc = await shareRef.get();
+      return res.json(serializeSharedNote(updatedDoc));
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to update share access." });
+    }
+  });
+
+  router.delete("/shares/:shareId", async (req, res) => {
+    try {
+      const shareRef = db.collection("noteShares").doc(req.params.shareId);
+      const shareDoc = await shareRef.get();
+      if (!shareDoc.exists) {
+        return res.status(404).json({ message: "Shared note not found." });
+      }
+
+      const share = shareDoc.data();
+      if (share.ownerId !== req.user.uid) {
+        return res.status(403).json({ message: "Only the owner can delete this share." });
+      }
+
+      await shareRef.delete();
+      return res.json({ message: "Shared note removed." });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to delete shared note." });
+    }
+  });
+
+  router.post("/shared-with-me/:shareId/remove", async (req, res) => {
+    try {
+      const shareRef = db.collection("noteShares").doc(req.params.shareId);
+      const shareDoc = await shareRef.get();
+      if (!shareDoc.exists) {
+        return res.status(404).json({ message: "Shared note not found." });
+      }
+
+      const share = shareDoc.data();
+      if (share.recipientId !== req.user.uid) {
+        return res.status(403).json({ message: "You do not have permission to remove this shared note." });
+      }
+
+      await shareRef.update({
+        recipientRemoved: true,
+        updatedAt: new Date().toISOString(),
+      });
+      return res.json({ message: "Shared note removed from your dashboard." });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to remove shared note." });
     }
   });
 
@@ -187,16 +418,24 @@ function createSharedNotesRoutes({ db }) {
 
   router.get("/:shareToken", async (req, res) => {
     try {
-      const snapshot = await db.collection("notes").where("shareToken", "==", req.params.shareToken).limit(1).get();
-      if (snapshot.empty) {
+      const doc = await db.collection("noteShares").doc(req.params.shareToken).get();
+      if (!doc.exists) {
         return res.status(404).json({ message: "Shared note not found." });
       }
 
-      const note = snapshot.docs[0].data();
+      const note = doc.data();
       return res.json({
-        title: note.title,
+        id: doc.id,
+        ownerId: note.ownerId || "",
+        recipientId: note.recipientId || "",
+        accessMode: note.accessMode || "view",
+        canView: note.canView !== false,
+        canEdit: Boolean(note.canEdit),
+        encryptedTitle: note.encryptedTitle,
         encryptedContent: note.encryptedContent,
-        sharedTestKey: note.sharedTestKey || "",
+        shareLink: note.shareLink || "",
+        createdAt: note.createdAt || "",
+        updatedAt: note.updatedAt || note.createdAt || "",
       });
     } catch (error) {
       return res.status(500).json({ message: error.message || "Unable to load shared note." });

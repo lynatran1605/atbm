@@ -364,6 +364,7 @@ button {
 .field input,
 .field select,
 #shared-note-content,
+#shared-note-title-input,
 #note-search,
 #note-title {
   width: 100%;
@@ -380,6 +381,15 @@ button {
 }
 
 .password-wrap input {
+  flex: 1;
+}
+
+.share-row {
+  display: flex;
+  gap: 10px;
+}
+
+.share-row input {
   flex: 1;
 }
 
@@ -464,20 +474,27 @@ button {
 
 .dropdown {
   position: absolute;
-  right: 28px;
-  top: 86px;
-  padding: 10px;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 240px;
+  padding: 12px;
   border-radius: 18px;
   background: var(--panel-strong);
   box-shadow: var(--shadow);
+  border: 1px solid rgba(192, 157, 120, 0.25);
+  z-index: 20;
 }
 
 .dropdown button {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 10px 14px;
+  padding: 12px 14px;
   border-radius: 12px;
+}
+
+.user-menu {
+  position: relative;
 }
 
 .dropdown button:hover {
@@ -512,6 +529,54 @@ button {
 
 .security-hint {
   margin: 16px 0 0;
+}
+
+.share-panel {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(49, 89, 78, 0.06);
+  border: 1px solid rgba(49, 89, 78, 0.14);
+}
+
+.shared-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.shared-column {
+  padding: 22px;
+  border-radius: 24px;
+}
+
+.shared-heading {
+  margin-bottom: 18px;
+}
+
+.shared-heading h3 {
+  margin: 0 0 8px;
+}
+
+.shared-note-shell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 28px;
+  border-radius: 28px;
+}
+
+.shared-note-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.shared-note-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .notes-layout {
@@ -608,6 +673,57 @@ button {
   bottom: 22px;
   padding: 14px 18px;
   border-radius: 16px;
+  z-index: 40;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(35, 23, 15, 0.34);
+  backdrop-filter: blur(6px);
+  z-index: 30;
+}
+
+.modal-card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.modal-card-wide {
+  width: min(920px, 100%);
+}
+
+.modal-card h3,
+.modal-card h4 {
+  margin-top: 0;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.security-section {
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(49, 89, 78, 0.05);
+  border: 1px solid rgba(49, 89, 78, 0.14);
 }
 
 @media (max-width: 1080px) {
@@ -617,7 +733,9 @@ button {
   .info-grid,
   .about-stats,
   .notes-layout,
-  .dashboard {
+  .shared-grid,
+  .dashboard,
+  .security-grid {
     grid-template-columns: 1fr;
   }
 
@@ -654,7 +772,9 @@ button {
   .dashboard-header,
   .toolbar,
   .editor-actions,
-  .section-heading {
+  .section-heading,
+  .share-row,
+  .shared-note-head {
     flex-direction: column;
     align-items: flex-start;
   }

@@ -20,21 +20,26 @@ function getTransporter() {
   return transporter;
 }
 
-async function sendOtpEmail(email, otp, username) {
+async function sendOtpEmail(email, otp, username, options = {}) {
   const mailer = getTransporter();
   const appName = process.env.APP_NAME || "Personal Diary";
+  const subject = options.subject || `${appName} - Email OTP Verification`;
+  const heading = options.heading || appName;
+  const intro = options.intro || `Xin chao ${username || "ban"},`;
+  const message = options.message || "Ma OTP cua ban la:";
+  const footer = options.footer || "Ma co hieu luc trong 10 phut.";
 
   await mailer.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: email,
-    subject: `${appName} - Email OTP Verification`,
+    subject,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>${appName}</h2>
-        <p>Xin chao ${username || "ban"},</p>
-        <p>Ma OTP cua ban la:</p>
+        <h2>${heading}</h2>
+        <p>${intro}</p>
+        <p>${message}</p>
         <h1 style="letter-spacing: 6px;">${otp}</h1>
-        <p>Ma co hieu luc trong 10 phut.</p>
+        <p>${footer}</p>
       </div>
     `,
   });

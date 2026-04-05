@@ -1503,21 +1503,3 @@ button:disabled {
     min-height: calc(100vh - 210px);
   }
 }
-
-.calendar-locked {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  color: var(--muted);
-  font-style: italic;
-}
-
-.parent-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  width: 100%;
-  flex: 1;
-}

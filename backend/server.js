@@ -54,7 +54,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", createAuthRoutes({ admin, db }));
 app.use("/api/notes/shared", createSharedNotesRoutes({ db }));
 app.use("/api/notes", authMiddleware, createNotesRoutes({ db }));
-app.use("/api/user", authMiddleware, createUserRoutes({ db }));
+app.use("/api/user", authMiddleware, createUserRoutes({ db, admin }));
 
 app.use("/api", (req, res) => {
   res.status(404).json({ message: "API route not found." });

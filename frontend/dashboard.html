@@ -304,42 +304,135 @@
     </div>
 
     <div id="security-modal" class="modal-overlay hidden">
-      <div class="modal-card modal-card-wide">
+      <div class="modal-card">
         <h3>Qu&#7843;n l&#253; b&#7843;o m&#7853;t</h3>
-        <div class="security-grid">
-          <section class="security-section">
-            <h4>&#272;&#7893;i m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p</h4>
-            <div class="field">
-              <label>M&#7853;t kh&#7849;u m&#7899;i</label>
-              <input id="security-new-password" type="password" />
-            </div>
-            <div class="field">
-              <label>OTP x&#225;c nh&#7853;n</label>
-              <input id="security-password-otp" type="text" maxlength="6" />
-            </div>
-            <div class="modal-actions">
-              <button id="security-password-request" class="secondary-btn" type="button">G&#7917;i OTP</button>
-              <button id="security-password-confirm" class="primary-btn" type="button">&#272;&#7893;i m&#7853;t kh&#7849;u</button>
-            </div>
-          </section>
-          <section class="security-section">
-            <h4>&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</h4>
-            <div class="field">
-              <label>Kh&#243;a c&#225; nh&#226;n m&#7899;i</label>
-              <input id="profile-new-personal-key" type="password" />
-            </div>
-            <div class="field">
-              <label>OTP x&#225;c nh&#7853;n</label>
-              <input id="profile-personal-key-otp" type="text" maxlength="6" />
-            </div>
-            <div class="modal-actions">
-              <button id="request-personal-key-otp" class="secondary-btn" type="button">G&#7917;i OTP</button>
-              <button id="confirm-personal-key" class="primary-btn" type="button">&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</button>
-            </div>
-          </section>
+        <p>Ch&#7885;n thao t&#225;c b&#7841;n mu&#7889;n th&#7921;c hi&#7879;n.</p>
+        <div class="security-options">
+          <button id="security-option-password" class="security-option-card" type="button">
+            <strong>&#272;&#7893;i m&#7853;t kh&#7849;u</strong>
+            <span>C&#7853;p nh&#7853;t m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p v&#7899;i OTP x&#225;c nh&#7853;n.</span>
+          </button>
+          <button id="security-option-key" class="security-option-card" type="button">
+            <strong>&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</strong>
+            <span>Thay kh&#243;a gi&#7843;i m&#227; ghi ch&#250; v&#224; gi&#7919; d&#7919; li&#7879;u an to&#224;n.</span>
+          </button>
+          <button id="security-option-delete" class="security-option-card danger" type="button">
+            <strong>X&#243;a t&#224;i kho&#7843;n</strong>
+            <span>&#272;&#432;a t&#224;i kho&#7843;n v&#224;o th&#249;ng r&#225;c 30 ng&#224;y tr&#432;&#7899;c khi x&#243;a h&#7859;n.</span>
+          </button>
         </div>
         <div class="modal-actions">
           <button id="security-close" class="text-btn" type="button">&#272;&#243;ng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="security-password-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>&#272;&#7893;i m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p</h3>
+        <div class="field">
+          <label>M&#7853;t kh&#7849;u hi&#7879;n t&#7841;i</label>
+          <input id="security-current-password" type="password" />
+        </div>
+        <div class="field">
+          <label>M&#7853;t kh&#7849;u m&#7899;i</label>
+          <input id="security-new-password" type="password" />
+        </div>
+        <div class="field">
+          <label>OTP x&#225;c nh&#7853;n</label>
+          <input id="security-password-otp" type="text" maxlength="6" />
+        </div>
+        <div class="modal-actions">
+          <button id="security-password-request" class="secondary-btn" type="button">G&#7917;i OTP</button>
+          <button id="security-password-confirm" class="primary-btn" type="button">&#272;&#7893;i m&#7853;t kh&#7849;u</button>
+          <button id="security-password-close" class="text-btn" type="button">&#272;&#243;ng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="personal-key-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</h3>
+        <div class="field">
+          <label>Kh&#243;a c&#225; nh&#226;n hi&#7879;n t&#7841;i</label>
+          <input id="profile-current-personal-key" type="password" />
+        </div>
+        <div class="field">
+          <label>Kh&#243;a c&#225; nh&#226;n m&#7899;i</label>
+          <input id="profile-new-personal-key" type="password" />
+        </div>
+        <div class="field">
+          <label>OTP x&#225;c nh&#7853;n</label>
+          <input id="profile-personal-key-otp" type="text" maxlength="6" />
+        </div>
+        <div class="modal-actions">
+          <button id="request-personal-key-otp" class="secondary-btn" type="button">G&#7917;i OTP</button>
+          <button id="confirm-personal-key" class="primary-btn" type="button">&#272;&#7893;i kh&#243;a c&#225; nh&#226;n</button>
+          <button id="personal-key-close" class="text-btn" type="button">&#272;&#243;ng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="delete-account-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>X&#243;a t&#224;i kho&#7843;n</h3>
+        <div class="field">
+          <label>M&#7853;t kh&#7849;u hi&#7879;n t&#7841;i</label>
+          <input id="delete-account-password" type="password" />
+        </div>
+        <div class="field">
+          <label>Kh&#243;a c&#225; nh&#226;n hi&#7879;n t&#7841;i</label>
+          <input id="delete-account-personal-key" type="password" />
+        </div>
+        <div class="field">
+          <label>OTP x&#225;c nh&#7853;n</label>
+          <input id="delete-account-otp" type="text" maxlength="6" />
+        </div>
+        <div class="modal-actions">
+          <button id="delete-account-request" class="secondary-btn" type="button">G&#7917;i OTP</button>
+          <button id="delete-account-confirm" class="primary-btn" type="button">X&#243;a t&#224;i kho&#7843;n</button>
+          <button id="delete-account-close" class="text-btn" type="button">&#272;&#243;ng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="notes-unlock-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>M&#7903; kh&#243;a nh&#7853;t k&#253;</h3>
+        <p>Nh&#7853;p kh&#243;a c&#225; nh&#226;n &#273;&#7875; &#273;&#7885;c v&#224; ch&#7881;nh s&#7917;a nh&#7853;t k&#253;.</p>
+        <div class="field">
+          <label>Kh&#243;a c&#225; nh&#226;n</label>
+          <input id="notes-unlock-key" type="password" placeholder="Nh&#7853;p kh&#243;a c&#225; nh&#226;n" />
+        </div>
+        <div class="modal-actions">
+          <button id="notes-unlock-confirm" class="primary-btn" type="button">M&#7903; kh&#243;a</button>
+          <button id="notes-unlock-close" class="text-btn" type="button">&#272;&#243;ng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="share-key-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>T&#7841;o link chia s&#7867;</h3>
+        <p>Nh&#7853;p kh&#243;a ki&#7875;m th&#7917; &#273;&#7875; ng&#432;&#7901;i nh&#7853;n d&#249;ng khi m&#7903; ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p>
+        <div class="field">
+          <label>Kh&#243;a ki&#7875;m th&#7917;</label>
+          <input id="share-test-key" type="password" placeholder="Nh&#7853;p kh&#243;a ki&#7875;m th&#7917;" />
+        </div>
+        <div class="modal-actions">
+          <button id="share-key-confirm" class="primary-btn" type="button">T&#7841;o link</button>
+          <button id="share-key-close" class="text-btn" type="button">&#272;&#243;ng</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="delete-account-confirm-modal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h3>X&#225;c nh&#7853;n x&#243;a t&#224;i kho&#7843;n</h3>
+        <p>B&#7841;n c&#243; ch&#7855;c mu&#7889;n x&#243;a v&#297;nh vi&#7877;n t&#224;i kho&#7843;n n&#224;y kh&#244;ng? T&#224;i kho&#7843;n s&#7869; v&#224;o th&#249;ng r&#225;c 30 ng&#224;y v&#224; s&#7869; b&#7883; x&#243;a h&#7859;n n&#7871;u b&#7841;n kh&#244;ng &#273;&#259;ng nh&#7853;p l&#7841;i.</p>
+        <div class="modal-actions">
+          <button id="delete-account-final-confirm" class="primary-btn" type="button">T&#244;i ch&#7855;c ch&#7855;n</button>
+          <button id="delete-account-final-close" class="text-btn" type="button">&#272;&#243;ng</button>
         </div>
       </div>
     </div>

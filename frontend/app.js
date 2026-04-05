@@ -23,6 +23,7 @@ const state = {
   personalKeyRequestId: "",
   profileAccessRequestId: "",
   passwordRequestId: "",
+  accountDeletionRequestId: "",
   profileAccessUnlocked: false,
   sharedPayload: null,
   hasAuthenticatedInSession: sessionStorage.getItem("diaryAuthenticatedThisSession") === "true",
@@ -111,6 +112,7 @@ const translations = {
       openLabel: "Mở",
       deleteLabel: "Xóa",
       restoreLabel: "Khôi phục",
+      permanentDeleteLabel: "Xóa vĩnh viễn",
     },
     toasts: {
       loginSuccess: "Đăng nhập thành công.",
@@ -122,6 +124,7 @@ const translations = {
       needForgotPassword: "Bạn cần nhập mật khẩu mới.",
       movedToTrash: "Đã chuyển nhật ký vào thùng rác.",
       restored: "Đã khôi phục nhật ký.",
+      permanentlyDeleted: "Đã xóa vĩnh viễn nhật ký.",
       saved: "Đã lưu nhật ký dưới dạng mã hóa.",
       profileSaved: "Đã cập nhật thông tin cá nhân.",
       unlockSuccess: "Đã mở khóa nội dung nhật ký.",
@@ -131,6 +134,7 @@ const translations = {
       needUnlock: "Hãy mở khóa nhật ký trước khi xem hoặc chỉnh sửa nội dung cũ.",
       shareCreated: "Đã tạo link chia sẻ và copy thông tin.",
       shareRemoved: "Đã xóa nhật ký chia sẻ khỏi danh sách của bạn.",
+      shareStopped: "Đã ngừng chia sẻ nhật ký này.",
       shareUpdated: "Đã cập nhật quyền chia sẻ.",
       shareSaved: "Đã lưu thay đổi trên nhật ký được chia sẻ.",
       needRecipient: "Bạn cần nhập tài khoản người nhận khi cho phép chỉnh sửa.",
@@ -140,13 +144,16 @@ const translations = {
       noNoteToShare: "Hãy mở một nhật ký trước khi chia sẻ.",
       keyPrompt: "Nhập khóa cá nhân để giải mã nhật ký:",
       sharePrompt: "Nhập khóa kiểm thử để gửi kèm:",
+      needShareKey: "Bạn cần nhập khóa kiểm thử để tạo link chia sẻ.",
       forgotPrompt: "Nhập email tài khoản:",
       forgotNewPasswordPrompt: "Nhập mật khẩu mới:",
       unlockRequiredForExisting: "Nhật ký cũ đang được giữ ở dạng mã hóa. Mở khóa trước để xem nội dung thật.",
       invalidKey: "Khóa cá nhân không đúng.",
       personalKeyOtpSent: "OTP đổi khóa cá nhân đã được gửi về email.",
       personalKeyUpdated: "Đã đổi khóa cá nhân và mã hóa lại note thành công.",
+      needCurrentPersonalKey: "Bạn cần nhập khóa cá nhân hiện tại.",
       needNewPersonalKey: "Bạn cần nhập khóa cá nhân mới.",
+      needCurrentPassword: "Bạn cần nhập mật khẩu hiện tại.",
       needOtp: "Bạn cần nhập OTP xác nhận đổi khóa.",
       needUnlockBeforeChange: "Hãy mở khóa toàn bộ note hiện tại trước khi đổi khóa cá nhân.",
       needUnlockBeforePasswordChange: "Hãy mở khóa toàn bộ note hiện tại trước khi đổi mật khẩu.",
@@ -163,6 +170,9 @@ const translations = {
       recoverySuccess: "Đã cấp lại khóa và đổi mật khẩu mới thành công.",
       passwordOtpSent: "OTP đổi mật khẩu đã được gửi về email.",
       passwordUpdated: "Đã đổi mật khẩu đăng nhập thành công.",
+      accountDeleteOtpSent: "OTP xóa tài khoản đã được gửi về email.",
+      accountDeleted: "Tài khoản đã được đưa vào thùng rác 30 ngày.",
+      needDeleteFields: "Bạn cần nhập mật khẩu hiện tại, khóa cá nhân hiện tại và OTP.",
       needPasswordFields: "Bạn cần nhập mật khẩu mới và OTP.",
       apiJsonError: "API trả về dữ liệu không hợp lệ. Vui lòng thử lại.",
     },
@@ -247,6 +257,7 @@ const translations = {
       openLabel: "Open",
       deleteLabel: "Delete",
       restoreLabel: "Restore",
+      permanentDeleteLabel: "Delete forever",
     },
     toasts: {
       loginSuccess: "Logged in successfully.",
@@ -258,6 +269,7 @@ const translations = {
       needForgotPassword: "You need to enter a new password.",
       movedToTrash: "Moved the entry to trash.",
       restored: "Restored the entry.",
+      permanentlyDeleted: "Deleted the entry permanently.",
       saved: "Saved the diary entry in encrypted form.",
       profileSaved: "Profile updated successfully.",
       unlockSuccess: "Diary content unlocked.",
@@ -267,6 +279,7 @@ const translations = {
       needUnlock: "Unlock the diary before viewing or editing older entries.",
       shareCreated: "Share link created and copied.",
       shareRemoved: "The shared note was removed from your list.",
+      shareStopped: "Sharing for this note has been stopped.",
       shareUpdated: "Share access updated.",
       shareSaved: "Shared note changes saved.",
       needRecipient: "A recipient account is required for edit access.",
@@ -276,13 +289,16 @@ const translations = {
       noNoteToShare: "Open a diary entry before sharing it.",
       keyPrompt: "Enter your personal key to decrypt diary entries:",
       sharePrompt: "Enter the test key to include:",
+      needShareKey: "Enter a test key before creating a share link.",
       forgotPrompt: "Enter your account email:",
       forgotNewPasswordPrompt: "Enter your new password:",
       unlockRequiredForExisting: "Existing diary entries remain encrypted until you unlock them.",
       invalidKey: "The personal key is incorrect.",
       personalKeyOtpSent: "The personal key OTP has been sent to your email.",
       personalKeyUpdated: "The personal key was updated and notes were re-encrypted successfully.",
+      needCurrentPersonalKey: "You need to enter your current personal key.",
       needNewPersonalKey: "You need to enter a new personal key.",
+      needCurrentPassword: "You need to enter your current password.",
       needOtp: "You need to enter the OTP confirmation code.",
       needUnlockBeforeChange: "Unlock your current notes before changing the personal key.",
       needUnlockBeforePasswordChange: "Unlock your current notes before changing the password.",
@@ -299,6 +315,9 @@ const translations = {
       recoverySuccess: "Your key was reissued and password updated successfully.",
       passwordOtpSent: "The password change OTP has been sent to your email.",
       passwordUpdated: "The login password has been updated successfully.",
+      accountDeleteOtpSent: "The account deletion OTP has been sent to your email.",
+      accountDeleted: "The account has been moved to trash for 30 days.",
+      needDeleteFields: "Enter your current password, current personal key, and OTP.",
       needPasswordFields: "Enter the new password and OTP.",
       apiJsonError: "The API returned an invalid response. Please try again.",
     },
@@ -424,12 +443,39 @@ const els = {
   recoverySubmit: byId("recovery-submit"),
   recoveryClose: byId("recovery-close"),
   securityModal: byId("security-modal"),
+  securityOptionPassword: byId("security-option-password"),
+  securityOptionKey: byId("security-option-key"),
+  securityOptionDelete: byId("security-option-delete"),
+  securityPasswordModal: byId("security-password-modal"),
   securityCurrentPassword: byId("security-current-password"),
   securityNewPassword: byId("security-new-password"),
   securityPasswordOtp: byId("security-password-otp"),
   securityPasswordRequest: byId("security-password-request"),
   securityPasswordConfirm: byId("security-password-confirm"),
+  securityPasswordClose: byId("security-password-close"),
   securityClose: byId("security-close"),
+  personalKeyModal: byId("personal-key-modal"),
+  profileCurrentPersonalKey: byId("profile-current-personal-key"),
+  profileCurrentPassword: byId("profile-current-password"),
+  personalKeyClose: byId("personal-key-close"),
+  deleteAccountModal: byId("delete-account-modal"),
+  deleteAccountPassword: byId("delete-account-password"),
+  deleteAccountPersonalKey: byId("delete-account-personal-key"),
+  deleteAccountOtp: byId("delete-account-otp"),
+  deleteAccountRequest: byId("delete-account-request"),
+  deleteAccountConfirm: byId("delete-account-confirm"),
+  deleteAccountClose: byId("delete-account-close"),
+  deleteAccountConfirmModal: byId("delete-account-confirm-modal"),
+  deleteAccountFinalConfirm: byId("delete-account-final-confirm"),
+  deleteAccountFinalClose: byId("delete-account-final-close"),
+  notesUnlockModal: byId("notes-unlock-modal"),
+  notesUnlockKey: byId("notes-unlock-key"),
+  notesUnlockConfirm: byId("notes-unlock-confirm"),
+  notesUnlockClose: byId("notes-unlock-close"),
+  shareKeyModal: byId("share-key-modal"),
+  shareTestKey: byId("share-test-key"),
+  shareKeyConfirm: byId("share-key-confirm"),
+  shareKeyClose: byId("share-key-close"),
   toast: byId("toast"),
   sharedNoteTitle: byId("shared-note-title"),
   sharedNoteTitleInput: byId("shared-note-title-input"),
@@ -589,6 +635,7 @@ function clearSession() {
   state.personalKeyRequestId = "";
   state.profileAccessRequestId = "";
   state.passwordRequestId = "";
+  state.accountDeletionRequestId = "";
   state.profileAccessUnlocked = false;
   state.sharedPayload = null;
   state.hasAuthenticatedInSession = false;
@@ -600,7 +647,11 @@ function clearSession() {
   sessionStorage.removeItem("diaryAuthenticatedThisSession");
 }
 
-function getEncryptionKey() { return state.personalKey || (!state.user?.hasPersonalKey ? state.tempPassword : ""); }
+function isPersonalKeyLinkedToPassword() {
+  return Boolean(state.user && (state.user.personalKeyMatchesPassword || !state.user.hasPersonalKey));
+}
+
+function getEncryptionKey() { return state.personalKey || (isPersonalKeyLinkedToPassword() ? state.tempPassword : ""); }
 function getDecryptionKey() { return state.notesUnlocked ? getEncryptionKey() : ""; }
 function decryptText(cipherText, overrideKey = "") {
   const key = overrideKey || getDecryptionKey();
@@ -608,14 +659,33 @@ function decryptText(cipherText, overrideKey = "") {
   try { return CryptoJS.AES.decrypt(cipherText, key).toString(CryptoJS.enc.Utf8) || ""; } catch { return ""; }
 }
 function encryptText(plainText, key) { return CryptoJS.AES.encrypt(plainText, key).toString(); }
-function hasValidPersonalKey(key) { return !state.user?.hasPersonalKey ? Boolean(key && key === state.tempPassword) : decryptText(state.user.personalKeyCheckCipher || "", key) === "bloomnote-personal-key-ready"; }
+function hasValidPersonalKey(key) {
+  return isPersonalKeyLinkedToPassword()
+    ? Boolean(key && key === state.tempPassword)
+    : decryptText(state.user.personalKeyCheckCipher || "", key) === "bloomnote-personal-key-ready";
+}
+function getNoteKeyCandidates(overrideKey = "") {
+  return [...new Set([
+    overrideKey,
+    state.personalKey,
+    state.tempPassword,
+    isPersonalKeyLinkedToPassword() ? state.tempPassword : "",
+  ].filter(Boolean))];
+}
+function resolveNoteKey(note, overrideKey = "") {
+  if (!note) return "";
+  for (const key of getNoteKeyCandidates(overrideKey)) {
+    const decryptedTitle = note.encryptedTitle ? decryptText(note.encryptedTitle, key) : "";
+    const decryptedContent = note.encryptedContent ? decryptText(note.encryptedContent, key) : "";
+    if (decryptedTitle || decryptedContent) return key;
+  }
+  return "";
+}
 function canDecryptNote(note, overrideKey = "") {
-  const key = overrideKey || getDecryptionKey();
-  if (!note?.encryptedContent || !key) return false;
-  return Boolean(decryptText(note.encryptedContent, key));
+  return Boolean(resolveNoteKey(note, overrideKey));
 }
 function getNoteTitle(note, overrideKey = "") {
-  const key = overrideKey || getDecryptionKey();
+  const key = resolveNoteKey(note, overrideKey);
   if (note.encryptedTitle && key) {
     const decryptedTitle = decryptText(note.encryptedTitle, key);
     if (decryptedTitle) return decryptedTitle;
@@ -623,7 +693,7 @@ function getNoteTitle(note, overrideKey = "") {
   return note.title || t().toasts.encryptedTitle;
 }
 function getNoteContent(note, overrideKey = "") {
-  const key = overrideKey || getDecryptionKey();
+  const key = resolveNoteKey(note, overrideKey);
   return note.encryptedContent && key ? decryptText(note.encryptedContent, key) : "";
 }
 
@@ -671,7 +741,7 @@ function renderNotes() {
     const isReadable = state.notesUnlocked && canDecryptNote(note);
     const title = isReadable ? getNoteTitle(note) : t().toasts.encryptedTitle;
     const preview = isReadable ? getNoteContent(note) : note.encryptedContent || "";
-    return `<article class="note-card"><span class="note-meta">${escapeHtml(isReadable ? copy.unlockedBadge : copy.lockedBadge)}</span><h4>${escapeHtml(title)}</h4><p>${escapeHtml(preview.slice(0, 140))}</p><div class="row"><button class="secondary-btn" type="button" onclick="restoreNote('${note.id}')">${copy.restoreLabel}</button></div></article>`;
+    return `<article class="note-card"><span class="note-meta">${escapeHtml(isReadable ? copy.unlockedBadge : copy.lockedBadge)}</span><h4>${escapeHtml(title)}</h4><p>${escapeHtml(preview.slice(0, 140))}</p><div class="row"><button class="secondary-btn" type="button" onclick="restoreNote('${note.id}')">${copy.restoreLabel}</button><button class="secondary-btn" type="button" onclick="permanentlyDeleteNote('${note.id}')">${copy.permanentDeleteLabel}</button></div></article>`;
   }).join("");
 }
 
@@ -742,7 +812,7 @@ function renderSharedLists() {
           <button class="secondary-btn" type="button" onclick="openSharedDashboardNote('${share.id}')">Mở</button>
           <button class="secondary-btn" type="button" onclick="toggleShareViewAccess('${share.id}', ${share.canView ? "false" : "true"})">${share.canView ? "Tắt xem" : "Bật xem"}</button>
           ${share.accessMode === "edit" ? `<button class="secondary-btn" type="button" onclick="toggleShareEditAccess('${share.id}', ${share.canEdit ? "false" : "true"})">${share.canEdit ? "Khóa sửa" : "Cho sửa"}</button>` : ""}
-          <button class="secondary-btn" type="button" onclick="deleteOwnedShare('${share.id}')">Xóa</button>
+          <button class="secondary-btn" type="button" onclick="stopOwnedShare('${share.id}')">Ngừng chia sẻ</button>
         </div>
       </article>
     `).join("");
@@ -752,7 +822,13 @@ function renderSharedLists() {
 window.selectNote = function selectNote(noteId) {
   const note = state.notes.find((item) => item.id === noteId);
   if (!note) return;
-  if (!state.notesUnlocked) return showToast(t().toasts.unlockRequiredForExisting);
+  if (!state.notesUnlocked) {
+    state.selectedNoteId = noteId;
+    els.noteTitle.value = note.title || "";
+    els.noteEditor.innerHTML = "";
+    setEditorMode();
+    return showToast(t().toasts.unlockRequiredForExisting);
+  }
   if (!canDecryptNote(note)) return showToast(t().toasts.invalidKey);
   state.selectedNoteId = noteId;
   els.noteTitle.value = getNoteTitle(note);
@@ -778,6 +854,17 @@ window.restoreNote = async function restoreNote(noteId) {
   try { await api(`/notes/${noteId}/restore`, { method: "POST" }); showToast(t().toasts.restored); await refreshNotes(); } catch (error) { showToast(error.message); }
 };
 
+window.permanentlyDeleteNote = async function permanentlyDeleteNote(noteId) {
+  try {
+    await api(`/notes/${noteId}/permanent`, { method: "DELETE" });
+    if (state.selectedNoteId === noteId) {
+      resetNoteEditorForNewEntry();
+    }
+    showToast(t().toasts.permanentlyDeleted);
+    await refreshNotes();
+  } catch (error) { showToast(error.message); }
+};
+
 async function saveNote() {
   const title = els.noteTitle.value.trim();
   const content = els.noteEditor.innerHTML.trim();
@@ -799,8 +886,13 @@ async function saveNote() {
 async function shareSelectedNote() {
   if (!state.selectedNoteId) return showToast(t().toasts.noNoteToShare);
   if (!state.notesUnlocked) return showToast(t().toasts.needUnlock);
-  const sharedTestKey = window.prompt(t().toasts.sharePrompt, "");
-  if (!sharedTestKey) return;
+  if (els.shareTestKey) els.shareTestKey.value = "";
+  openModal(els.shareKeyModal);
+}
+
+async function confirmShareSelectedNote() {
+  const sharedTestKey = els.shareTestKey?.value.trim() || "";
+  if (!sharedTestKey) return showToast(t().toasts.needShareKey);
   const accessMode = els.shareAccessMode?.value || "view";
   const recipientIdentifier = els.shareRecipient?.value.trim() || "";
   if (accessMode === "edit" && !recipientIdentifier) return showToast(t().toasts.needRecipient);
@@ -813,6 +905,7 @@ async function shareSelectedNote() {
     });
     if (els.shareLinkOutput) els.shareLinkOutput.value = data.shareLink;
     if (els.shareLinkPanel) els.shareLinkPanel.classList.remove("hidden");
+    closeModal(els.shareKeyModal);
     await navigator.clipboard.writeText(data.shareLink);
     showToast(t().toasts.shareCreated);
     await refreshSharedNotes();
@@ -855,13 +948,14 @@ function resetNoteEditorForNewEntry() {
 }
 
 async function requestPersonalKeyOtp() {
+  const currentPersonalKey = els.profileCurrentPersonalKey?.value || "";
   const newPersonalKey = els.profileNewPersonalKey.value.trim();
+  if (!currentPersonalKey) return showToast(t().toasts.needCurrentPersonalKey);
   if (!newPersonalKey) return showToast(t().toasts.needNewPersonalKey);
-  if (state.user?.hasPersonalKey && !state.notesUnlocked) return showToast(t().toasts.needUnlockBeforeChange);
   try {
     const data = await api("/user/personal-key/request-otp", {
       method: "POST",
-      body: JSON.stringify({ newPersonalKey }),
+      body: JSON.stringify({ currentPersonalKey, newPersonalKey }),
     });
     state.personalKeyRequestId = data.requestId;
     showToast(t().toasts.personalKeyOtpSent);
@@ -870,6 +964,46 @@ async function requestPersonalKeyOtp() {
 
 function openModal(element) { if (element) element.classList.remove("hidden"); }
 function closeModal(element) { if (element) element.classList.add("hidden"); }
+function openSecurityStepModal(element) {
+  closeModal(els.securityModal);
+  openModal(element);
+}
+
+function openUnlockNotesModal() {
+  if (els.notesUnlockKey) {
+    els.notesUnlockKey.value = state.personalKey || (isPersonalKeyLinkedToPassword() ? state.tempPassword : "");
+  }
+  openModal(els.notesUnlockModal);
+}
+
+function confirmUnlockNotes() {
+  const key = els.notesUnlockKey?.value.trim() || "";
+  if (!key) return showToast(t().toasts.needKey);
+  if (!hasValidPersonalKey(key)) return showToast(t().toasts.invalidKey);
+  const hasReadableNotes = !state.notes.length && !state.trash.length
+    ? true
+    : [...state.notes, ...state.trash].some((note) => canDecryptNote(note, key));
+  if (!hasReadableNotes) return showToast(t().toasts.invalidKey);
+  state.personalKey = key;
+  state.notesUnlocked = true;
+  sessionStorage.setItem("personalKey", key);
+  closeModal(els.notesUnlockModal);
+  renderDashboardStats();
+  updateUnlockStateUI();
+  renderNotes();
+  if (state.selectedNoteId) {
+    const selectedNote = state.notes.find((note) => note.id === state.selectedNoteId);
+    if (!selectedNote || !canDecryptNote(selectedNote)) {
+      resetNoteEditorForNewEntry();
+    } else {
+      els.noteTitle.value = getNoteTitle(selectedNote, key);
+      els.noteEditor.innerHTML = getNoteContent(selectedNote, key);
+      if (els.shareLinkPanel) els.shareLinkPanel.classList.add("hidden");
+      setEditorMode();
+    }
+  }
+  showToast(t().toasts.unlockSuccess);
+}
 
 async function requestProfileAccessOtp() {
   try {
@@ -929,13 +1063,15 @@ async function confirmRecoveryOtp() {
 }
 
 async function requestPasswordOtp() {
+  const currentPassword = els.securityCurrentPassword?.value || "";
   const newPassword = els.securityNewPassword.value;
+  if (!currentPassword) return showToast(t().toasts.needCurrentPassword);
   if (!newPassword) return showToast(t().toasts.needPasswordFields);
-  if (!state.user?.hasPersonalKey && state.notes.length && !state.notesUnlocked) {
+  if (isPersonalKeyLinkedToPassword() && state.notes.length && !state.notesUnlocked) {
     return showToast(t().toasts.needUnlockBeforePasswordChange);
   }
   try {
-    const data = await api("/user/password/request-otp", { method: "POST", body: JSON.stringify({ newPassword }) });
+    const data = await api("/user/password/request-otp", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) });
     state.passwordRequestId = data.requestId;
     showToast(t().toasts.passwordOtpSent);
   } catch (error) { showToast(error.message); }
@@ -948,7 +1084,7 @@ async function confirmPasswordChange() {
       requestId: state.passwordRequestId,
       otp: els.securityPasswordOtp.value.trim(),
     };
-    if (!state.user?.hasPersonalKey) {
+    if (isPersonalKeyLinkedToPassword()) {
       payload.reEncryptedNotes = buildReEncryptedNotes(
         els.securityNewPassword.value,
         t().toasts.needUnlockBeforePasswordChange,
@@ -959,24 +1095,26 @@ async function confirmPasswordChange() {
     state.user = data.user || state.user;
     state.tempPassword = els.securityNewPassword.value;
     state.passwordRequestId = "";
-    if (!state.user?.hasPersonalKey) {
+    if (isPersonalKeyLinkedToPassword()) {
       state.personalKey = "";
       state.notesUnlocked = Boolean(state.notes.length);
       sessionStorage.removeItem("personalKey");
     }
     sessionStorage.setItem("tempPassword", state.tempPassword);
     localStorage.setItem("diaryUser", JSON.stringify(state.user));
+    if (els.securityCurrentPassword) els.securityCurrentPassword.value = "";
     els.securityNewPassword.value = "";
     els.securityPasswordOtp.value = "";
     await refreshNotes();
     renderDashboardStats();
     updateUnlockStateUI();
+    closeModal(els.securityPasswordModal);
     showToast(t().toasts.passwordUpdated);
   } catch (error) { showToast(error.message); }
 }
 
 function buildReEncryptedNotes(newPersonalKey, unlockErrorMessage = t().toasts.needUnlockBeforeChange, decryptErrorMessage = t().toasts.invalidKey) {
-  const currentKey = state.user?.hasPersonalKey ? state.personalKey : (state.personalKey || state.tempPassword);
+  const currentKey = isPersonalKeyLinkedToPassword() ? (state.personalKey || state.tempPassword) : state.personalKey;
   if (!currentKey) throw new Error(unlockErrorMessage);
   return [...state.notes, ...state.trash].map((note) => {
     const title = getNoteTitle(note, currentKey);
@@ -987,24 +1125,79 @@ function buildReEncryptedNotes(newPersonalKey, unlockErrorMessage = t().toasts.n
 }
 
 async function confirmPersonalKeyChange() {
+  const currentPersonalKey = els.profileCurrentPersonalKey?.value || "";
   const newPersonalKey = els.profileNewPersonalKey.value.trim();
   const otp = els.profilePersonalKeyOtp.value.trim();
+  if (!currentPersonalKey) return showToast(t().toasts.needCurrentPersonalKey);
   if (!newPersonalKey) return showToast(t().toasts.needNewPersonalKey);
   if (!otp) return showToast(t().toasts.needOtp);
   if (!state.personalKeyRequestId) return showToast(t().toasts.personalKeyOtpSent);
   try {
-    const data = await api("/user/personal-key/confirm", { method: "POST", body: JSON.stringify({ requestId: state.personalKeyRequestId, otp, reEncryptedNotes: buildReEncryptedNotes(newPersonalKey) }) });
+    const data = await api("/user/personal-key/confirm", {
+      method: "POST",
+      body: JSON.stringify({ requestId: state.personalKeyRequestId, otp, currentPersonalKey, newPersonalKey }),
+    });
     state.user = data.user;
+    state.user.personalKeyMatchesPassword = false;
+    state.user.personalKeyCheckCipher = encryptText("bloomnote-personal-key-ready", newPersonalKey);
     state.personalKey = newPersonalKey;
     state.notesUnlocked = true;
     state.personalKeyRequestId = "";
     sessionStorage.setItem("personalKey", newPersonalKey);
     localStorage.setItem("diaryUser", JSON.stringify(data.user));
+    if (els.profileCurrentPersonalKey) els.profileCurrentPersonalKey.value = "";
     els.profileNewPersonalKey.value = "";
     els.profilePersonalKeyOtp.value = "";
     showToast(t().toasts.personalKeyUpdated);
     await refreshNotes();
     await loadProfile();
+    closeModal(els.personalKeyModal);
+  } catch (error) { showToast(error.message); }
+}
+
+async function requestAccountDeletionOtp() {
+  const currentPassword = els.deleteAccountPassword?.value || "";
+  const currentPersonalKey = els.deleteAccountPersonalKey?.value || "";
+  if (!currentPassword) return showToast(t().toasts.needCurrentPassword);
+  if (!currentPersonalKey) return showToast(t().toasts.needCurrentPersonalKey);
+
+  try {
+    const data = await api("/user/account-delete/request-otp", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, currentPersonalKey }),
+    });
+    state.accountDeletionRequestId = data.requestId;
+    showToast(t().toasts.accountDeleteOtpSent);
+  } catch (error) { showToast(error.message); }
+}
+
+function confirmAccountDeletionPrompt() {
+  const currentPassword = els.deleteAccountPassword?.value || "";
+  const currentPersonalKey = els.deleteAccountPersonalKey?.value || "";
+  const otp = els.deleteAccountOtp?.value.trim() || "";
+  if (!currentPassword || !currentPersonalKey || !otp) {
+    return showToast(t().toasts.needDeleteFields);
+  }
+  if (!state.accountDeletionRequestId) {
+    return showToast(t().toasts.accountDeleteOtpSent);
+  }
+  openModal(els.deleteAccountConfirmModal);
+}
+
+async function finalizeAccountDeletion() {
+  try {
+    await api("/user/account-delete/confirm", {
+      method: "POST",
+      body: JSON.stringify({ requestId: state.accountDeletionRequestId, otp: els.deleteAccountOtp.value.trim() }),
+    });
+    closeModal(els.deleteAccountConfirmModal);
+    closeModal(els.deleteAccountModal);
+    clearSession();
+    if (els.deleteAccountPassword) els.deleteAccountPassword.value = "";
+    if (els.deleteAccountPersonalKey) els.deleteAccountPersonalKey.value = "";
+    if (els.deleteAccountOtp) els.deleteAccountOtp.value = "";
+    showToast(t().toasts.accountDeleted);
+    goToLogin();
   } catch (error) { showToast(error.message); }
 }
 
@@ -1084,6 +1277,14 @@ window.deleteOwnedShare = async function deleteOwnedShare(shareId) {
   try {
     await api(`/notes/shares/${shareId}`, { method: "DELETE" });
     showToast(t().toasts.shareRemoved);
+    await refreshSharedNotes();
+  } catch (error) { showToast(error.message); }
+};
+
+window.stopOwnedShare = async function stopOwnedShare(shareId) {
+  try {
+    await api(`/notes/shares/${shareId}/stop`, { method: "POST" });
+    showToast(t().toasts.shareStopped);
     await refreshSharedNotes();
   } catch (error) { showToast(error.message); }
 };
@@ -1263,32 +1464,28 @@ function initDashboardPage() {
       renderNotes();
       return showToast(t().toasts.lockSuccess);
     }
-    const defaultKey = state.personalKey || (!state.user?.hasPersonalKey ? state.tempPassword : "");
-    const key = window.prompt(t().toasts.keyPrompt, defaultKey);
-    if (!key) return;
-    if (!hasValidPersonalKey(key)) return showToast(t().toasts.invalidKey);
-    state.personalKey = key;
-    state.notesUnlocked = true;
-    sessionStorage.setItem("personalKey", key);
-    renderDashboardStats();
-    updateUnlockStateUI();
-    renderNotes();
-    if (state.selectedNoteId) {
-      const selectedNote = state.notes.find((note) => note.id === state.selectedNoteId);
-      if (!selectedNote || !canDecryptNote(selectedNote)) resetNoteEditorForNewEntry();
-    }
-    showToast(t().toasts.unlockSuccess);
+    openUnlockNotesModal();
   });
   on(els.saveNote, "click", saveNote);
   on(els.shareNote, "click", shareSelectedNote);
   on(els.fab, "click", () => { switchScreen("notes"); resetNoteEditorForNewEntry(); });
   on(els.saveProfile, "click", saveProfile);
   on(els.openSecurityPanel, "click", () => openModal(els.securityModal));
+  on(els.securityOptionPassword, "click", () => openSecurityStepModal(els.securityPasswordModal));
+  on(els.securityOptionKey, "click", () => openSecurityStepModal(els.personalKeyModal));
+  on(els.securityOptionDelete, "click", () => openSecurityStepModal(els.deleteAccountModal));
   on(els.requestPersonalKeyOtp, "click", requestPersonalKeyOtp);
   on(els.confirmPersonalKey, "click", confirmPersonalKeyChange);
   on(els.securityPasswordRequest, "click", requestPasswordOtp);
   on(els.securityPasswordConfirm, "click", confirmPasswordChange);
+  on(els.deleteAccountRequest, "click", requestAccountDeletionOtp);
+  on(els.deleteAccountConfirm, "click", confirmAccountDeletionPrompt);
+  on(els.deleteAccountFinalConfirm, "click", finalizeAccountDeletion);
+  on(els.deleteAccountFinalClose, "click", () => closeModal(els.deleteAccountConfirmModal));
   on(els.securityClose, "click", () => closeModal(els.securityModal));
+  on(els.securityPasswordClose, "click", () => closeModal(els.securityPasswordModal));
+  on(els.personalKeyClose, "click", () => closeModal(els.personalKeyModal));
+  on(els.deleteAccountClose, "click", () => closeModal(els.deleteAccountModal));
   on(els.profileAccessClose, "click", () => closeModal(els.profileAccessModal));
   on(els.profileOtpClose, "click", () => closeModal(els.profileOtpModal));
   on(els.profileAccessForgot, "click", requestRecoveryOtp);
@@ -1311,6 +1508,10 @@ function initDashboardPage() {
     await navigator.clipboard.writeText(els.shareLinkOutput.value);
     showToast(t().toasts.shareCreated);
   });
+  on(els.notesUnlockConfirm, "click", confirmUnlockNotes);
+  on(els.notesUnlockClose, "click", () => closeModal(els.notesUnlockModal));
+  on(els.shareKeyConfirm, "click", confirmShareSelectedNote);
+  on(els.shareKeyClose, "click", () => closeModal(els.shareKeyModal));
 }
 
 initCommonEvents();

@@ -2,10 +2,23 @@
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const { sendOtpEmail } = require("../../services/emailService");
+const { encryptDiaryContent } = require("../../services/encryptionService");
 const { hashPassword, verifyPassword } = require("../utils/passwords");
+
+const PERSONAL_KEY_TEST_VALUE = "bloomnote-personal-key-ready";
 
 function createAuthRoutes({ admin, db }) {
   const router = express.Router();
+
+  async function buildPersonalKeyFields(personalKey) {
+    return {
+      personalKeyHash: await hashPassword(personalKey),
+      personalKeyHint: `Personal key ready (${personalKey.length} chars)`,
+      personalKeyCheckCipher: encryptDiaryContent(PERSONAL_KEY_TEST_VALUE, personalKey),
+      personalKeyConfigured: true,
+      personalKeyMatchesPassword: true,
+    };
+  }
 
   function getBaseUrl(req) {
     return req.app?.locals?.baseUrl || process.env.APP_BASE_URL || "http://localhost:3000";
@@ -39,10 +52,7 @@ function createAuthRoutes({ admin, db }) {
         username,
         email,
         passwordHash,
-        personalKeyHash: "",
-        personalKeyHint: "",
-        personalKeyCheckCipher: "",
-        personalKeyConfigured: false,
+        ...(await buildPersonalKeyFields(password)),
         otp,
         expiresAt,
         createdAt: new Date().toISOString(),
@@ -95,6 +105,7 @@ function createAuthRoutes({ admin, db }) {
         personalKeyHint: pendingUser.personalKeyHint || "",
         personalKeyCheckCipher: pendingUser.personalKeyCheckCipher || "",
         personalKeyConfigured: Boolean(pendingUser.personalKeyConfigured),
+        personalKeyMatchesPassword: Boolean(pendingUser.personalKeyMatchesPassword),
         createdAt: new Date().toISOString(),
       });
 
@@ -160,25 +171,57 @@ function createAuthRoutes({ admin, db }) {
       const userDoc = snapshot.docs[0];
       const user = userDoc.data();
       const isMatch = await verifyPassword(password, user.passwordHash);
-      const hasPersonalKey = Boolean(user.personalKeyConfigured);
 
       if (!isMatch) {
         return res.status(401).json({ message: "Incorrect password." });
       }
 
+      const updates = {
+        updatedAt: new Date().toISOString(),
+      };
+      let needsUserUpdate = false;
+
       if (typeof user.passwordHash === "string" && user.passwordHash.startsWith("$2")) {
+        updates.passwordHash = await hashPassword(password);
+        needsUserUpdate = true;
+      }
+
+      if (!user.personalKeyConfigured) {
+        Object.assign(updates, await buildPersonalKeyFields(password));
+        needsUserUpdate = true;
+      } else if (user.personalKeyMatchesPassword === undefined) {
+        updates.personalKeyMatchesPassword = false;
+        needsUserUpdate = true;
+      }
+
+      let resolvedUser = user;
+      if (needsUserUpdate) {
+        await userDoc.ref.update(updates);
+        resolvedUser = { ...user, ...updates };
+      }
+
+      const deletionExpiry = resolvedUser.accountDeletionExpiresAt ? new Date(resolvedUser.accountDeletionExpiresAt).getTime() : 0;
+      if (resolvedUser.accountDeletionPending && deletionExpiry && deletionExpiry > Date.now()) {
         await userDoc.ref.update({
-          passwordHash: await hashPassword(password),
+          accountDeletionPending: false,
+          accountDeletedAt: "",
+          accountDeletionExpiresAt: "",
           updatedAt: new Date().toISOString(),
         });
+        resolvedUser = {
+          ...resolvedUser,
+          accountDeletionPending: false,
+          accountDeletedAt: "",
+          accountDeletionExpiresAt: "",
+        };
       }
 
       const token = jwt.sign(
         {
-          uid: user.uid,
-          username: user.username,
-          email: user.email,
-          displayName: user.displayName || user.username,
+          uid: resolvedUser.uid,
+          username: resolvedUser.username,
+          email: resolvedUser.email,
+          displayName: resolvedUser.displayName || resolvedUser.username,
         },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
@@ -188,15 +231,16 @@ function createAuthRoutes({ admin, db }) {
         message: "Login successful.",
         token,
         user: {
-          uid: user.uid,
-          username: user.username,
-          email: user.email,
-          displayName: user.displayName || user.username,
-          birthDate: user.birthDate || "",
-          gender: user.gender || "",
-          personalKeyHint: user.personalKeyHint || "",
-          hasPersonalKey,
-          personalKeyCheckCipher: user.personalKeyCheckCipher || "",
+          uid: resolvedUser.uid,
+          username: resolvedUser.username,
+          email: resolvedUser.email,
+          displayName: resolvedUser.displayName || resolvedUser.username,
+          birthDate: resolvedUser.birthDate || "",
+          gender: resolvedUser.gender || "",
+          personalKeyHint: resolvedUser.personalKeyHint || "",
+          hasPersonalKey: Boolean(resolvedUser.personalKeyConfigured),
+          personalKeyMatchesPassword: Boolean(resolvedUser.personalKeyMatchesPassword),
+          personalKeyCheckCipher: resolvedUser.personalKeyCheckCipher || "",
         },
       });
     } catch (error) {
@@ -287,11 +331,8 @@ function createAuthRoutes({ admin, db }) {
         updatedAt: new Date().toISOString(),
       };
 
-      if (!user.personalKeyConfigured) {
-        updates.personalKeyHash = "";
-        updates.personalKeyHint = "";
-        updates.personalKeyCheckCipher = "";
-        updates.personalKeyConfigured = false;
+      if (user.personalKeyMatchesPassword || !user.personalKeyConfigured) {
+        Object.assign(updates, await buildPersonalKeyFields(newPassword));
       }
 
       await userRef.update(updates);

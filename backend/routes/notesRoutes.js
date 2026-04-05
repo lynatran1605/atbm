@@ -7,8 +7,27 @@ const { isExpired } = require("../../utils/date");
 function createNotesRoutes({ db }) {
   const router = express.Router();
 
+  function isLocalhostUrl(value) {
+    return /:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(value || "").trim());
+  }
+
   function getBaseUrl(req) {
-    return req.app?.locals?.baseUrl || process.env.APP_BASE_URL || "http://localhost:3000";
+    const appBaseUrl = (req.app?.locals?.baseUrl || process.env.APP_BASE_URL || "").trim();
+    const forwardedProto = String(Array.isArray(req.headers["x-forwarded-proto"]) ? req.headers["x-forwarded-proto"][0] : req.headers["x-forwarded-proto"] || req.protocol || "https")
+      .split(",")[0]
+      .trim();
+    const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+    const requestBaseUrl = forwardedProto && host ? `${forwardedProto}://${host}` : "";
+
+    if (!appBaseUrl) {
+      return requestBaseUrl || "http://localhost:3000";
+    }
+
+    if (requestBaseUrl && isLocalhostUrl(appBaseUrl) && !isLocalhostUrl(requestBaseUrl)) {
+      return requestBaseUrl;
+    }
+
+    return appBaseUrl;
   }
 
   function getDashboardUrl(req) {
@@ -173,6 +192,27 @@ function createNotesRoutes({ db }) {
       return res.json({ id: restoredDoc.id, ...restoredDoc.data() });
     } catch (error) {
       return res.status(500).json({ message: error.message || "Unable to restore note." });
+    }
+  });
+
+  router.delete("/:id/permanent", async (req, res) => {
+    try {
+      const noteRef = db.collection("notes").doc(req.params.id);
+      const doc = await noteRef.get();
+
+      if (!doc.exists) return res.status(404).json({ message: "Note not found." });
+      const note = doc.data();
+      if (note.ownerId !== req.user.uid) {
+        return res.status(403).json({ message: "You do not have permission to permanently delete this note." });
+      }
+      if (!note.isDeleted) {
+        return res.status(400).json({ message: "Only notes in trash can be permanently deleted." });
+      }
+
+      await noteRef.delete();
+      return res.json({ message: "Note deleted permanently." });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to permanently delete note." });
     }
   });
 
@@ -387,6 +427,26 @@ function createNotesRoutes({ db }) {
     }
   });
 
+  router.post("/shares/:shareId/stop", async (req, res) => {
+    try {
+      const shareRef = db.collection("noteShares").doc(req.params.shareId);
+      const shareDoc = await shareRef.get();
+      if (!shareDoc.exists) {
+        return res.status(404).json({ message: "Shared note not found." });
+      }
+
+      const share = shareDoc.data();
+      if (share.ownerId !== req.user.uid) {
+        return res.status(403).json({ message: "Only the owner can stop sharing this note." });
+      }
+
+      await shareRef.delete();
+      return res.json({ message: "Sharing has been stopped." });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to stop sharing note." });
+    }
+  });
+
   router.post("/shared-with-me/:shareId/remove", async (req, res) => {
     try {
       const shareRef = db.collection("noteShares").doc(req.params.shareId);
@@ -424,6 +484,10 @@ function createSharedNotesRoutes({ db }) {
       }
 
       const note = doc.data();
+      if (note.canView === false) {
+        return res.status(403).json({ message: "This shared note is no longer available." });
+      }
+
       return res.json({
         id: doc.id,
         ownerId: note.ownerId || "",

@@ -1,7 +1,7 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
-const { encryptDiaryContent } = require("../../services/encryptionService");
-const { hashPassword } = require("../utils/passwords");
+const { encryptDiaryContent, decryptDiaryContent } = require("../../services/encryptionService");
+const { hashPassword, verifyPassword } = require("../utils/passwords");
 const { sendOtpEmail } = require("../../services/emailService");
 
 const PERSONAL_KEY_TEST_VALUE = "bloomnote-personal-key-ready";
@@ -25,6 +25,16 @@ function createUserRoutes({ db }) {
     return { requestId, otp, expiresAt };
   }
 
+  async function buildPersonalKeyFields(personalKey, matchesPassword = false) {
+    return {
+      personalKeyHash: await hashPassword(personalKey),
+      personalKeyHint: `Personal key ready (${personalKey.length} chars)`,
+      personalKeyCheckCipher: encryptDiaryContent(PERSONAL_KEY_TEST_VALUE, personalKey),
+      personalKeyConfigured: true,
+      personalKeyMatchesPassword: matchesPassword,
+    };
+  }
+
   function serializeUser(user) {
     return {
       uid: user.uid,
@@ -35,7 +45,10 @@ function createUserRoutes({ db }) {
       gender: user.gender || "",
       personalKeyHint: user.personalKeyHint || "",
       hasPersonalKey: Boolean(user.personalKeyConfigured),
+      personalKeyMatchesPassword: Boolean(user.personalKeyMatchesPassword),
       personalKeyCheckCipher: user.personalKeyCheckCipher || "",
+      accountDeletionPending: Boolean(user.accountDeletionPending),
+      accountDeletionExpiresAt: user.accountDeletionExpiresAt || "",
     };
   }
 
@@ -78,9 +91,9 @@ function createUserRoutes({ db }) {
 
   router.post("/personal-key/request-otp", async (req, res) => {
     try {
-      const { newPersonalKey } = req.body;
-      if (!newPersonalKey) {
-        return res.status(400).json({ message: "New personal key is required." });
+      const { currentPersonalKey, newPersonalKey } = req.body;
+      if (!currentPersonalKey || !newPersonalKey) {
+        return res.status(400).json({ message: "Current personal key and new personal key are required." });
       }
 
       const userRef = db.collection("users").doc(req.user.uid);
@@ -90,6 +103,10 @@ function createUserRoutes({ db }) {
       }
 
       const user = userDoc.data();
+      const personalKeyOk = await verifyPassword(currentPersonalKey, user.personalKeyHash);
+      if (!personalKeyOk) {
+        return res.status(401).json({ message: "Current personal key is incorrect." });
+      }
       const requestId = uuidv4();
       const otp = String(Math.floor(100000 + Math.random() * 900000));
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
@@ -99,9 +116,7 @@ function createUserRoutes({ db }) {
         userId: req.user.uid,
         otp,
         expiresAt,
-        newPersonalKeyHash: await hashPassword(newPersonalKey),
-        newPersonalKeyHint: `Personal key ready (${newPersonalKey.length} chars)`,
-        newPersonalKeyCheckCipher: encryptDiaryContent(PERSONAL_KEY_TEST_VALUE, newPersonalKey),
+        ...(await buildPersonalKeyFields(newPersonalKey, false)),
         createdAt: new Date().toISOString(),
       });
 
@@ -123,7 +138,7 @@ function createUserRoutes({ db }) {
 
   router.post("/personal-key/confirm", async (req, res) => {
     try {
-      const { requestId, otp, reEncryptedNotes } = req.body;
+      const { requestId, otp, currentPersonalKey, newPersonalKey } = req.body;
       if (!requestId || !otp) {
         return res.status(400).json({ message: "Request ID and OTP are required." });
       }
@@ -145,33 +160,50 @@ function createUserRoutes({ db }) {
         return res.status(400).json({ message: "OTP has expired." });
       }
 
-      if (Array.isArray(reEncryptedNotes) && reEncryptedNotes.length) {
-        const updatesById = new Map(
-          reEncryptedNotes
-            .filter((note) => note && note.id)
-            .map((note) => [note.id, note])
-        );
-        const snapshot = await db.collection("notes").where("ownerId", "==", req.user.uid).get();
-        const tasks = [];
-
-        snapshot.forEach((noteDoc) => {
-          const noteUpdate = updatesById.get(noteDoc.id);
-          if (!noteUpdate) {
-            return;
-          }
-
-          tasks.push(
-            noteDoc.ref.update({
-              title: "",
-              encryptedTitle: noteUpdate.encryptedTitle || noteDoc.data().encryptedTitle || "",
-              encryptedContent: noteUpdate.encryptedContent || noteDoc.data().encryptedContent || "",
-              updatedAt: new Date().toISOString(),
-            })
-          );
-        });
-
-        await Promise.all(tasks);
+      if (!currentPersonalKey || !newPersonalKey) {
+        return res.status(400).json({ message: "Current personal key and new personal key are required." });
       }
+
+      const userRef = db.collection("users").doc(req.user.uid);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      const user = userDoc.data();
+      const personalKeyOk = await verifyPassword(currentPersonalKey, user.personalKeyHash);
+      if (!personalKeyOk) {
+        return res.status(401).json({ message: "Current personal key is incorrect." });
+      }
+
+      const newKeyOk = await verifyPassword(newPersonalKey, pendingRequest.personalKeyHash);
+      if (!newKeyOk) {
+        return res.status(400).json({ message: "The new personal key does not match the OTP request." });
+      }
+
+      const notesSnapshot = await db.collection("notes").where("ownerId", "==", req.user.uid).get();
+      const noteTasks = [];
+
+      for (const noteDoc of notesSnapshot.docs) {
+        const note = noteDoc.data();
+        const decryptedTitle = decryptDiaryContent(note.encryptedTitle || "", currentPersonalKey);
+        const decryptedContent = decryptDiaryContent(note.encryptedContent || "", currentPersonalKey);
+
+        if (!decryptedTitle || !decryptedContent) {
+          return res.status(401).json({ message: "Current personal key is incorrect." });
+        }
+
+        noteTasks.push(
+          noteDoc.ref.update({
+            title: "",
+            encryptedTitle: encryptDiaryContent(decryptedTitle, newPersonalKey),
+            encryptedContent: encryptDiaryContent(decryptedContent, newPersonalKey),
+            updatedAt: new Date().toISOString(),
+          })
+        );
+      }
+
+      await Promise.all(noteTasks);
 
       const shareSnapshot = await db.collection("noteShares").where("ownerId", "==", req.user.uid).get();
       const shareCleanupTasks = [];
@@ -180,11 +212,12 @@ function createUserRoutes({ db }) {
       });
       await Promise.all(shareCleanupTasks);
 
-      await db.collection("users").doc(req.user.uid).update({
-        personalKeyHash: pendingRequest.newPersonalKeyHash,
-        personalKeyHint: pendingRequest.newPersonalKeyHint,
-        personalKeyCheckCipher: pendingRequest.newPersonalKeyCheckCipher,
+      await userRef.update({
+        personalKeyHash: pendingRequest.personalKeyHash,
+        personalKeyHint: pendingRequest.personalKeyHint,
+        personalKeyCheckCipher: pendingRequest.personalKeyCheckCipher,
         personalKeyConfigured: true,
+        personalKeyMatchesPassword: false,
         updatedAt: new Date().toISOString(),
       });
 
@@ -308,10 +341,7 @@ function createUserRoutes({ db }) {
 
       await db.collection("users").doc(req.user.uid).update({
         passwordHash: await hashPassword(newPassword),
-        personalKeyHash: "",
-        personalKeyHint: "",
-        personalKeyCheckCipher: "",
-        personalKeyConfigured: false,
+        ...(await buildPersonalKeyFields(newPassword, true)),
         updatedAt: new Date().toISOString(),
       });
 
@@ -329,9 +359,9 @@ function createUserRoutes({ db }) {
 
   router.post("/password/request-otp", async (req, res) => {
     try {
-      const { newPassword } = req.body;
-      if (!newPassword) {
-        return res.status(400).json({ message: "New password is required." });
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required." });
       }
 
       const userRef = db.collection("users").doc(req.user.uid);
@@ -341,12 +371,18 @@ function createUserRoutes({ db }) {
       }
 
       const user = userDoc.data();
+      const passwordOk = await verifyPassword(currentPassword, user.passwordHash);
+      if (!passwordOk) {
+        return res.status(401).json({ message: "Current password is incorrect." });
+      }
+
       const { requestId, otp } = await createOtpRequest("passwordOtpRequests", {
         userId: req.user.uid,
         newPasswordHash: await hashPassword(newPassword),
-        newPersonalKeyHint: `Personal key ready (${newPassword.length} chars)`,
-        newPersonalKeyCheckCipher: encryptDiaryContent(PERSONAL_KEY_TEST_VALUE, newPassword),
-        personalKeyConfigured: Boolean(user.personalKeyConfigured),
+        personalKeyMatchesPassword: Boolean(user.personalKeyMatchesPassword || !user.personalKeyConfigured),
+        ...(user.personalKeyMatchesPassword || !user.personalKeyConfigured
+          ? await buildPersonalKeyFields(newPassword, true)
+          : {}),
       });
 
       await sendOtpEmail(user.email, otp, user.displayName || user.username, {
@@ -394,7 +430,7 @@ function createUserRoutes({ db }) {
       }
 
       const user = userDoc.data();
-      if (!user.personalKeyConfigured && Array.isArray(reEncryptedNotes) && reEncryptedNotes.length) {
+      if ((user.personalKeyMatchesPassword || !user.personalKeyConfigured) && Array.isArray(reEncryptedNotes) && reEncryptedNotes.length) {
         const updatesById = new Map(
           reEncryptedNotes
             .filter((note) => note && note.id)
@@ -427,11 +463,12 @@ function createUserRoutes({ db }) {
         updatedAt: new Date().toISOString(),
       };
 
-      if (!user.personalKeyConfigured) {
-        updates.personalKeyHash = "";
-        updates.personalKeyHint = "";
-        updates.personalKeyCheckCipher = "";
-        updates.personalKeyConfigured = false;
+      if (pendingRequest.personalKeyMatchesPassword) {
+        updates.personalKeyHash = pendingRequest.personalKeyHash;
+        updates.personalKeyHint = pendingRequest.personalKeyHint;
+        updates.personalKeyCheckCipher = pendingRequest.personalKeyCheckCipher;
+        updates.personalKeyConfigured = true;
+        updates.personalKeyMatchesPassword = true;
       }
 
       await userRef.update(updates);
@@ -444,6 +481,95 @@ function createUserRoutes({ db }) {
       });
     } catch (error) {
       return res.status(500).json({ message: error.message || "Unable to confirm password update." });
+    }
+  });
+
+  router.post("/account-delete/request-otp", async (req, res) => {
+    try {
+      const { currentPassword, currentPersonalKey } = req.body;
+      if (!currentPassword || !currentPersonalKey) {
+        return res.status(400).json({ message: "Current password and current personal key are required." });
+      }
+
+      const userRef = db.collection("users").doc(req.user.uid);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      const user = userDoc.data();
+      const passwordOk = await verifyPassword(currentPassword, user.passwordHash);
+      if (!passwordOk) {
+        return res.status(401).json({ message: "Current password is incorrect." });
+      }
+
+      const personalKeyOk = await verifyPassword(currentPersonalKey, user.personalKeyHash);
+      if (!personalKeyOk) {
+        return res.status(401).json({ message: "Current personal key is incorrect." });
+      }
+
+      const { requestId, otp } = await createOtpRequest("accountDeletionOtpRequests", {
+        userId: req.user.uid,
+      });
+
+      await sendOtpEmail(user.email, otp, user.displayName || user.username, {
+        subject: "BloomNote - OTP xoa tai khoan",
+        heading: "BloomNote - Xoa tai khoan",
+        message: "Ma OTP de xac nhan dua tai khoan cua ban vao thung rac 30 ngay la:",
+        footer: "Neu dang nhap lai trong 30 ngay, tai khoan se duoc khoi phuc.",
+      });
+
+      return res.json({
+        message: "OTP sent to your email successfully.",
+        requestId,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to start account deletion." });
+    }
+  });
+
+  router.post("/account-delete/confirm", async (req, res) => {
+    try {
+      const { requestId, otp } = req.body;
+      if (!requestId || !otp) {
+        return res.status(400).json({ message: "Request ID and OTP are required." });
+      }
+
+      const requestRef = db.collection("accountDeletionOtpRequests").doc(requestId);
+      const requestDoc = await requestRef.get();
+      if (!requestDoc.exists) {
+        return res.status(404).json({ message: "Account deletion request not found." });
+      }
+
+      const pendingRequest = requestDoc.data();
+      if (pendingRequest.userId !== req.user.uid) {
+        return res.status(403).json({ message: "You do not have permission to confirm this request." });
+      }
+      if (pendingRequest.otp !== otp) {
+        return res.status(400).json({ message: "Invalid OTP." });
+      }
+      if (new Date(pendingRequest.expiresAt).getTime() < Date.now()) {
+        return res.status(400).json({ message: "OTP has expired." });
+      }
+
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      await db.collection("users").doc(req.user.uid).update({
+        accountDeletionPending: true,
+        accountDeletedAt: now.toISOString(),
+        accountDeletionExpiresAt: expiresAt,
+        updatedAt: now.toISOString(),
+      });
+
+      await requestRef.delete();
+
+      return res.json({
+        message: "Account moved to trash successfully.",
+        expiresAt,
+      });
+    } catch (error) {
+      return res.status(500).json({ message: error.message || "Unable to confirm account deletion." });
     }
   });
 

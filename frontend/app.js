@@ -380,6 +380,9 @@ const els = {
   registerSubmit: byId("register-submit"),
   loginPrompt: byId("login-prompt"),
   goLogin: byId("go-login"),
+  authTabLogin: byId("auth-tab-login"),
+  authTabRegister: byId("auth-tab-register"),
+  authTabOtp: byId("auth-tab-otp"),
   otpHeading: byId("otp-heading"),
   otpText: byId("otp-text"),
   otpCode: byId("otp-code"),
@@ -496,7 +499,14 @@ function showToast(message) {
 }
 function renderTagList(container, items) { if (container) container.innerHTML = items.map((item) => `<span>${escapeHtml(item)}</span>`).join(""); }
 function goToHome(section = "") { window.location.href = `/index.html${section ? `#${section}` : ""}`; }
-function goToLogin() { window.location.href = "/login.html"; }
+function goToLogin(newTab = false) {
+  const targetUrl = "/login.html";
+  if (newTab) {
+    window.open(targetUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+  window.location.href = targetUrl;
+}
 function goToDashboard(hash = "") { window.location.href = `/dashboard.html${hash}`; }
 
 function renderOtpCardContent() {
@@ -551,28 +561,30 @@ function renderMarketingContent() {
   if (els.aboutStat1) els.aboutStat1.textContent = copy.public.aboutStats[0];
   if (els.aboutStat2) els.aboutStat2.textContent = copy.public.aboutStats[1];
   if (els.aboutStat3) els.aboutStat3.textContent = copy.public.aboutStats[2];
-  if (els.authKicker) {
-    els.authKicker.textContent = copy.auth.kicker;
-    els.authTitle.textContent = copy.auth.title;
-    els.authText.textContent = copy.auth.text;
-    els.authBackHome.textContent = copy.auth.backHome;
+  if (page === "login") {
+    if (els.authKicker) els.authKicker.textContent = copy.auth.kicker;
+    if (els.authTitle) els.authTitle.textContent = copy.auth.title;
+    if (els.authText) els.authText.textContent = copy.auth.text;
+    if (els.authBackHome) els.authBackHome.textContent = copy.auth.backHome;
     renderTagList(els.authTags, copy.auth.tags);
-    els.loginHeading.textContent = copy.auth.loginHeading;
-    els.loginIdentifierLabel.textContent = copy.auth.loginIdentifierLabel;
-    els.loginPasswordLabel.textContent = copy.auth.loginPasswordLabel;
-    els.loginSubmit.textContent = copy.auth.loginSubmit;
-    els.forgotPassword.textContent = copy.auth.forgotPassword;
-    els.registerPrompt.textContent = copy.auth.registerPrompt;
-    els.goRegister.textContent = copy.auth.goRegister;
-    els.registerHeading.textContent = copy.auth.registerHeading;
-    els.registerUsernameLabel.textContent = copy.auth.registerUsernameLabel;
-    els.registerEmailLabel.textContent = copy.auth.registerEmailLabel;
-    els.registerPasswordLabel.textContent = copy.auth.registerPasswordLabel;
-    els.registerSubmit.textContent = copy.auth.registerSubmit;
-    els.loginPrompt.textContent = copy.auth.loginPrompt;
-    els.goLogin.textContent = copy.auth.goLogin;
-    els.otpSubmit.textContent = copy.auth.otpSubmit;
-    els.togglePassword.textContent = copy.auth.toggleShow;
+    if (els.loginHeading) els.loginHeading.textContent = copy.auth.loginHeading;
+    if (els.loginIdentifierLabel) els.loginIdentifierLabel.textContent = copy.auth.loginIdentifierLabel;
+    if (els.loginPasswordLabel) els.loginPasswordLabel.textContent = copy.auth.loginPasswordLabel;
+    if (els.loginSubmit) els.loginSubmit.textContent = copy.auth.loginSubmit;
+    if (els.forgotPassword) els.forgotPassword.textContent = copy.auth.forgotPassword;
+    if (els.registerPrompt) els.registerPrompt.textContent = copy.auth.registerPrompt;
+    if (els.goRegister) els.goRegister.textContent = copy.auth.goRegister;
+    if (els.registerHeading) els.registerHeading.textContent = copy.auth.registerHeading;
+    if (els.registerUsernameLabel) els.registerUsernameLabel.textContent = copy.auth.registerUsernameLabel;
+    if (els.registerEmailLabel) els.registerEmailLabel.textContent = copy.auth.registerEmailLabel;
+    if (els.registerPasswordLabel) els.registerPasswordLabel.textContent = copy.auth.registerPasswordLabel;
+    if (els.registerSubmit) els.registerSubmit.textContent = copy.auth.registerSubmit;
+    if (els.loginPrompt) els.loginPrompt.textContent = copy.auth.loginPrompt;
+    if (els.goLogin) els.goLogin.textContent = copy.auth.goLogin;
+    if (els.otpSubmit) els.otpSubmit.textContent = copy.auth.otpSubmit;
+    if (els.togglePassword) els.togglePassword.textContent = copy.auth.toggleShow;
+    if (els.loginIdentifier) els.loginIdentifier.placeholder = "you@example.com";
+    if (els.loginPassword) els.loginPassword.placeholder = "********";
     renderOtpCardContent();
   }
   if (page === "dashboard") {
@@ -587,6 +599,12 @@ function toggleAuthCard(target) {
   els.loginCard.classList.toggle("hidden", target !== "login");
   els.registerCard.classList.toggle("hidden", target !== "register");
   els.otpCard.classList.toggle("hidden", target !== "otp");
+  if (els.authTabLogin) els.authTabLogin.classList.toggle("active", target === "login");
+  if (els.authTabRegister) els.authTabRegister.classList.toggle("active", target === "register");
+  if (els.authTabOtp) {
+    els.authTabOtp.classList.toggle("hidden", target !== "otp");
+    els.authTabOtp.classList.toggle("active", target === "otp");
+  }
   if (target === "otp") renderOtpCardContent();
 }
 
@@ -595,6 +613,11 @@ async function api(path, options = {}) {
     headers: { "Content-Type": "application/json", ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
     ...options,
   });
+  if (response.status === 401 && page === "dashboard") {
+    clearSession();
+    goToHome();
+    throw new Error("Unauthorized");
+  }
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("application/json")) {
     const text = await response.text();
@@ -1304,9 +1327,9 @@ function initHomePage() {
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
   on(els.brandHome, "click", () => goToHome("home"));
-  on(els.navLogin, "click", goToLogin);
+  on(els.navLogin, "click", () => goToLogin(true));
   on(els.heroAbout, "click", () => byId("about")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  on(els.heroLogin, "click", goToLogin);
+  on(els.heroLogin, "click", () => goToLogin(true));
   const section = byId(window.location.hash.replace("#", ""));
   if (section) requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
@@ -1318,6 +1341,8 @@ function initLoginPage() {
   on(els.brandHome, "click", () => goToHome("home"));
   on(els.navLogin, "click", goToLogin);
   els.navButtons.forEach((button) => on(button, "click", () => goToHome(button.dataset.section)));
+  on(els.authTabLogin, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("login"); });
+  on(els.authTabRegister, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("register"); });
   on(els.authBackHome, "click", () => goToHome("home"));
   on(els.goRegister, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("register"); });
   on(els.goLogin, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("login"); });
@@ -1432,7 +1457,7 @@ function initDashboardPage() {
   });
   loadSharedNote().then((shared) => {
     if (shared) return;
-    if (!state.token || !state.user || !state.hasAuthenticatedInSession) return goToLogin();
+    if (!state.token || !state.user || !state.hasAuthenticatedInSession) return goToHome();
     if (els.userDropdownTrigger) els.userDropdownTrigger.textContent = state.user.displayName || state.user.username || "User";
     switchScreen("dashboard-home");
     refreshNotes();
@@ -1449,7 +1474,8 @@ function initDashboardPage() {
     const action = button.dataset.profileAction;
     if (els.userDropdown) els.userDropdown.classList.add("hidden");
     if (action === "profile") { state.profileAccessUnlocked = false; els.profileAccessKey.value = ""; return openModal(els.profileAccessModal); }
-    if (action === "switch" || action === "logout") { clearSession(); showToast(action === "switch" ? t().toasts.switchAccount : t().toasts.logout); goToLogin(); }
+    if (action === "switch") { clearSession(); showToast(t().toasts.switchAccount); return goToLogin(); }
+    if (action === "logout") { clearSession(); showToast(t().toasts.logout); return goToHome(); }
   }));
   document.querySelectorAll(".editor-toolbar button").forEach((button) => on(button, "click", () => { if (!state.selectedNoteId || state.notesUnlocked) document.execCommand(button.dataset.command, false, null); }));
   on(els.noteSearch, "input", renderNotes);

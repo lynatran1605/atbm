@@ -6,7 +6,10 @@
     <title>BloomNote Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
   </head>
@@ -23,18 +26,18 @@
         </nav>
       </header>
 
-      <main class="main-shell auth-page">
-        <div class="auth-hero panel-shell">
-          <p id="auth-kicker" class="section-kicker"></p>
-          <h2 id="auth-title"></h2>
-          <p id="auth-text"></p>
-          <div id="auth-tags" class="hero-tags"></div>
-          <button id="auth-back-home" class="secondary-btn" type="button">Về trang chủ</button>
-        </div>
+      <main class="main-shell auth-page auth-page-centered">
+        <div class="auth-panel auth-panel-centered">
+          <div class="auth-tabs" role="tablist" aria-label="Authentication tabs">
+            <button id="auth-tab-login" class="auth-tab active" type="button">Đăng nhập</button>
+            <button id="auth-tab-register" class="auth-tab" type="button">Đăng ký</button>
+            <button id="auth-tab-otp" class="auth-tab hidden" type="button" tabindex="-1">OTP</button>
+          </div>
 
-        <div class="auth-panel">
           <div id="login-card" class="card panel-shell">
-            <h2 id="login-heading"></h2>
+            <div class="auth-card-head">
+              <h2 id="login-heading"></h2>
+            </div>
             <div class="field">
               <label id="login-identifier-label"></label>
               <input id="login-identifier" type="text" placeholder="you@example.com" />
@@ -52,7 +55,9 @@
           </div>
 
           <div id="register-card" class="card panel-shell hidden">
-            <h2 id="register-heading"></h2>
+            <div class="auth-card-head">
+              <h2 id="register-heading"></h2>
+            </div>
             <div class="field">
               <label id="register-username-label"></label>
               <input id="register-username" type="text" />
@@ -70,7 +75,9 @@
           </div>
 
           <div id="otp-card" class="card panel-shell hidden">
-            <h2 id="otp-heading"></h2>
+            <div class="auth-card-head">
+              <h2 id="otp-heading"></h2>
+            </div>
             <p id="otp-text"></p>
             <div class="field">
               <label>OTP</label>

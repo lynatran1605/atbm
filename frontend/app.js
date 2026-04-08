@@ -13,6 +13,7 @@ const state = {
   sharedWithMe: [],
   selectedNoteId: null,
   selectedSharedNoteId: "",
+  shareToken: "",
   pendingId: sessionStorage.getItem("pendingId") || "",
   authFlow: sessionStorage.getItem("authFlow") || "register",
   forgotPasswordRequestId: sessionStorage.getItem("forgotPasswordRequestId") || "",
@@ -31,6 +32,9 @@ const state = {
   selectedCalendarDate: new Date().toISOString().split("T")[0],
   calendarNotes: {},
   rsaPrivateKeyVisible: false,
+  sharedViewOrigin: "public",
+  previousScreen: "dashboard-home",
+  calendarAgendaExpanded: false,
 };
 
 if (!window.CryptoJS) throw new Error("CryptoJS failed to load. Check your internet connection or CDN access.");
@@ -522,6 +526,9 @@ const landingContent = {
 };
 
 const els = {
+  publicShareTopbar: byId("public-share-topbar"),
+  shareBrandHome: byId("share-brand-home"),
+  shareTopbarLogin: byId("share-topbar-login"),
   navButtons: Array.from(document.querySelectorAll(".nav-btn[data-section]")),
   brandHome: byId("brand-home"),
   navLogin: byId("nav-login"),
@@ -613,6 +620,7 @@ const els = {
   otpResend: byId("otp-resend"),
   otpSubmit: byId("otp-submit"),
   sideButtons: Array.from(document.querySelectorAll(".side-btn")),
+  topScreenButtons: Array.from(document.querySelectorAll(".top-screen-btn")),
   screens: Array.from(document.querySelectorAll(".screen")),
   screenTitle: byId("screen-title"),
   screenSubtitle: byId("screen-subtitle"),
@@ -728,17 +736,34 @@ const els = {
   sharedNoteSave: byId("shared-note-save"),
   sharedNoteEditor: byId("shared-note-editor"),
   sharedToolbar: byId("shared-toolbar"),
+  sharedViewClose: byId("shared-view-close"),
+  shareAuthGate: byId("share-auth-gate"),
+  shareAuthTitle: byId("share-auth-title"),
+  shareAuthText: byId("share-auth-text"),
+  shareLoginIdentifierLabel: byId("share-login-identifier-label"),
+  shareLoginPasswordLabel: byId("share-login-password-label"),
+  shareLoginIdentifier: byId("share-login-identifier"),
+  shareLoginPassword: byId("share-login-password"),
+  shareLoginSubmit: byId("share-login-submit"),
   sharedFontSizeSelect: byId("shared-font-size-select"),
   sharedFontFamilySelect: byId("shared-font-family-select"),
   sharedFontColor: byId("shared-font-color"),
   sharedHighlightColor: byId("shared-highlight-color"),
   sharedClearFormat: byId("shared-clear-format"),
+  calendarMonthPicker: byId("calendar-month-picker"),
+  calendarMonthInline: byId("calendar-month-inline"),
+  calendarYearInline: byId("calendar-year-inline"),
+  calendarOpenPicker: byId("calendar-open-picker"),
   calendarMonthLabel: byId("calendar-month-label"),
   calendarGrid: byId("calendar-grid"),
   calendarSelectedDate: byId("calendar-selected-date"),
   calendarNoteInput: byId("calendar-note-input"),
   calendarSaveNote: byId("calendar-save-note"),
   calendarClearNote: byId("calendar-clear-note"),
+  calendarAgendaTitle: byId("calendar-agenda-title"),
+  calendarAgendaText: byId("calendar-agenda-text"),
+  calendarAgendaToggle: byId("calendar-agenda-toggle"),
+  calendarAgendaList: byId("calendar-agenda-list"),
   calendarYearSelect: byId("calendar-year-select"),
   calendarMonthSelect: byId("calendar-month-select"),
   calendarPrev: byId("calendar-prev"),
@@ -829,14 +854,114 @@ function formatCalendarLabel(dateString) {
   });
 }
 
+function getCalendarMonthOptions() {
+  if (state.language === "vi") {
+    return Array.from({ length: 12 }, (_, index) => `Tháng ${index + 1}`);
+  }
+  return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+}
+
+function syncCalendarSelectors() {
+  const monthSelect = els.calendarMonthInline;
+  const yearSelect = els.calendarYearInline;
+  if (!monthSelect || !yearSelect) return;
+
+  const viewDate = new Date(state.calendarViewDate);
+  const currentYear = viewDate.getFullYear();
+  const currentMonth = viewDate.getMonth();
+  const monthLabels = getCalendarMonthOptions();
+
+  monthSelect.innerHTML = monthLabels
+    .map((label, index) => `<option value="${index}">${escapeHtml(label)}</option>`)
+    .join("");
+
+  const years = [];
+  for (let year = currentYear - 8; year <= currentYear + 8; year += 1) {
+    years.push(`<option value="${year}">${year}</option>`);
+  }
+  yearSelect.innerHTML = years.join("");
+
+  monthSelect.value = `${currentMonth}`;
+  yearSelect.value = `${currentYear}`;
+
+  if (els.calendarMonthSelect) {
+    els.calendarMonthSelect.innerHTML = monthLabels
+      .map((label, index) => `<option value="${index}">${escapeHtml(label)}</option>`)
+      .join("");
+    els.calendarMonthSelect.value = `${currentMonth}`;
+  }
+  if (els.calendarYearSelect) {
+    els.calendarYearSelect.innerHTML = years.join("");
+    els.calendarYearSelect.value = `${currentYear}`;
+  }
+}
+
+function getCalendarAgendaItems() {
+  const viewDate = new Date(state.calendarViewDate);
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const today = formatCalendarDate(new Date());
+
+  const entries = Object.entries(state.calendarNotes)
+    .filter(([, note]) => String(note || "").trim())
+    .map(([date, note]) => ({ date, note: String(note).trim(), parsedDate: new Date(date) }))
+    .filter((item) => item.parsedDate.getFullYear() === year && item.parsedDate.getMonth() === month);
+
+  entries.sort((a, b) => {
+    const aUpcoming = a.date >= today ? 0 : 1;
+    const bUpcoming = b.date >= today ? 0 : 1;
+    if (aUpcoming !== bUpcoming) return aUpcoming - bUpcoming;
+    return a.date.localeCompare(b.date);
+  });
+
+  return entries;
+}
+
+function renderCalendarAgenda() {
+  if (!els.calendarAgendaList || !els.calendarAgendaToggle) return;
+  const items = getCalendarAgendaItems();
+  const isVi = state.language === "vi";
+  const visibleItems = state.calendarAgendaExpanded ? items : items.slice(0, 5);
+
+  if (!items.length) {
+    els.calendarAgendaList.innerHTML = `<div class="calendar-agenda-empty">${escapeHtml(isVi ? "Chưa có nhắc hẹn nào trong tháng này." : "No reminders in this month yet.")}</div>`;
+    els.calendarAgendaToggle.classList.add("hidden");
+    return;
+  }
+
+  els.calendarAgendaList.innerHTML = visibleItems.map((item) => `
+    <button class="calendar-agenda-item${item.date === state.selectedCalendarDate ? " is-active" : ""}" type="button" data-calendar-agenda-date="${item.date}">
+      <span class="calendar-agenda-date">${escapeHtml(formatCalendarLabel(item.date))}</span>
+      <span class="calendar-agenda-note">${escapeHtml(item.note)}</span>
+    </button>
+  `).join("");
+
+  els.calendarAgendaList.querySelectorAll("[data-calendar-agenda-date]").forEach((button) => on(button, "click", () => {
+    state.selectedCalendarDate = button.dataset.calendarAgendaDate;
+    renderCalendarWidget();
+  }));
+
+  if (items.length > 5) {
+    els.calendarAgendaToggle.classList.remove("hidden");
+    els.calendarAgendaToggle.textContent = state.calendarAgendaExpanded
+      ? (isVi ? "Rút gọn" : "Show less")
+      : (isVi ? "Xem thêm" : "View more");
+  } else {
+    els.calendarAgendaToggle.classList.add("hidden");
+  }
+}
+
 function renderCalendarWidget() {
-  if (!els.calendarGrid || !els.calendarMonthLabel || !els.calendarSelectedDate || !els.calendarNoteInput) return;
+  if (!els.calendarGrid || !els.calendarMonthLabel) return;
 
   if (!state.notesUnlocked) {
     els.calendarMonthLabel.textContent = t().toasts.needUnlock;
     els.calendarGrid.innerHTML = `<div class="calendar-locked">${t().toasts.calendarLocked}</div>`;
-    els.calendarSelectedDate.textContent = "";
-    els.calendarNoteInput.value = "";
+    if (els.calendarMonthPicker) els.calendarMonthPicker.value = "";
+    if (els.calendarSelectedDate) els.calendarSelectedDate.textContent = "--";
+    if (els.calendarNoteInput) els.calendarNoteInput.value = "";
+    if (els.calendarAgendaList) els.calendarAgendaList.innerHTML = "";
+    if (els.calendarAgendaToggle) els.calendarAgendaToggle.classList.add("hidden");
     return;
   }
 
@@ -850,9 +975,10 @@ function renderCalendarWidget() {
   const today = formatCalendarDate(new Date());
 
   els.calendarMonthLabel.textContent = viewDate.toLocaleDateString(state.language === "vi" ? "vi-VN" : "en-US", {
-    month: "long",
+    month: state.language === "vi" ? "long" : "short",
     year: "numeric",
   });
+  syncCalendarSelectors();
 
   const cells = [];
   for (let index = 0; index < totalCells; index += 1) {
@@ -861,25 +987,18 @@ function renderCalendarWidget() {
     const isOutside = cellDate.getMonth() !== month;
     const isToday = dateValue === today;
     const isSelected = dateValue === state.selectedCalendarDate;
-    const hasNote = Boolean(state.calendarNotes[dateValue]);
-
-    cells.push(`
-      <button
-        class="calendar-day${isOutside ? " is-outside" : ""}${isToday ? " is-today" : ""}${isSelected ? " is-selected" : ""}${hasNote ? " has-note" : ""}"
-        type="button"
-        data-calendar-date="${dateValue}"
-      >${cellDate.getDate()}</button>
-    `);
+    const hasNote = Boolean(state.calendarNotes[dateValue]?.trim());
+    cells.push(`<button class="calendar-day${isOutside ? " is-outside" : ""}${isToday ? " is-today" : ""}${isSelected ? " is-selected" : ""}${hasNote ? " has-note" : ""}" type="button" data-calendar-date="${dateValue}">${cellDate.getDate()}</button>`);
   }
 
   els.calendarGrid.innerHTML = cells.join("");
-  els.calendarSelectedDate.textContent = formatCalendarLabel(state.selectedCalendarDate);
-  els.calendarNoteInput.value = state.calendarNotes[state.selectedCalendarDate] || "";
-
+  if (els.calendarSelectedDate) els.calendarSelectedDate.textContent = formatCalendarLabel(state.selectedCalendarDate);
+  if (els.calendarNoteInput) els.calendarNoteInput.value = state.calendarNotes[state.selectedCalendarDate] || "";
   els.calendarGrid.querySelectorAll("[data-calendar-date]").forEach((button) => on(button, "click", () => {
     state.selectedCalendarDate = button.dataset.calendarDate;
     renderCalendarWidget();
   }));
+  renderCalendarAgenda();
 }
 function renderTagList(container, items) { if (container) container.innerHTML = items.map((item) => `<span>${escapeHtml(item)}</span>`).join(""); }
 let homeShowcaseIndex = 0;
@@ -936,6 +1055,26 @@ function goToLogin(newTab = false) {
 }
 function goToDashboard(hash = "") { window.location.href = `/dashboard.html${hash}`; }
 
+function hasStoredLogin() {
+  return Boolean(state.token && state.user);
+}
+
+function hasActiveSession() {
+  return Boolean(state.token && state.user && state.hasAuthenticatedInSession);
+}
+
+function normalizeUsername(value = "") {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidUsername(value = "") {
+  return /^[a-z0-9_]{4,32}$/.test(normalizeUsername(value));
+}
+
+function hasStoredPrivateKeyForCurrentUser() {
+  return Boolean(getStoredPrivateKey());
+}
+
 function renderOtpCardContent() {
   if (!els.otpHeading || !els.otpText) return;
   const copy = t().auth;
@@ -956,6 +1095,7 @@ function renderOtpCardContent() {
 
 function renderMarketingContent() {
   const copy = t();
+  const isVi = state.language === "vi";
   document.documentElement.lang = state.language;
   localStorage.setItem("diaryLanguage", state.language);
   syncLoadingText();
@@ -966,7 +1106,7 @@ function renderMarketingContent() {
     if (section === "features" || section === "intro") button.textContent = copy.nav.intro;
     if (section === "about") button.textContent = copy.nav.about;
   });
-  if (els.navLogin) els.navLogin.textContent = copy.nav.login;
+  if (els.navLogin) els.navLogin.textContent = hasStoredLogin() ? (isVi ? "Vào dashboard" : "Dashboard") : copy.nav.login;
   if (els.homeKicker) els.homeKicker.textContent = copy.public.homeKicker;
   if (els.homeTitle) els.homeTitle.textContent = copy.public.homeTitle;
   if (els.homeText) els.homeText.textContent = copy.public.homeText;
@@ -1015,13 +1155,170 @@ function renderMarketingContent() {
     if (els.togglePassword) els.togglePassword.textContent = copy.auth.toggleShow;
     if (els.loginIdentifier) els.loginIdentifier.placeholder = "you@example.com";
     if (els.loginPassword) els.loginPassword.placeholder = "********";
+    if (els.registerUsername) els.registerUsername.placeholder = state.language === "vi" ? "vi_du123" : "example_123";
     renderOtpCardContent();
   }
   if (page === "dashboard") {
+    updateStaticDashboardCopy();
     renderDashboardStats();
     updateUnlockStateUI();
     renderCalendarWidget();
     switchScreen(state.currentScreen);
+  }
+}
+
+function updateStaticDashboardCopy() {
+  if (page !== "dashboard") return;
+  const isVi = state.language === "vi";
+  const textMap = {
+    "sidebar-note": isVi ? "Không gian riêng cho viết, lưu và quản lý nhật ký cá nhân." : "A private space for writing, saving, and managing your personal diary.",
+    "sidebar-footer-title": isVi ? "Riêng tư trước tiên" : "Privacy first",
+    "sidebar-footer-text": isVi ? "Nội dung chỉ hiển thị rõ sau khi bạn chủ động mở khóa." : "Content becomes readable only after you choose to unlock it.",
+    "side-dashboard-home": isVi ? "Trang chủ" : "Home",
+    "side-calendar": isVi ? "Lịch" : "Calendar",
+    "side-notes": isVi ? "Nhật ký" : "Diary",
+    "side-shared-notes": isVi ? "Nhật ký được chia sẻ" : "Shared diary",
+    "side-trash": isVi ? "Thùng rác" : "Trash",
+    "top-dashboard-home": isVi ? "Trang chủ" : "Home",
+    "top-calendar": isVi ? "Lịch" : "Calendar",
+    "top-notes": isVi ? "Nhật ký" : "Diary",
+    "top-shared-notes": isVi ? "Chia sẻ" : "Shared",
+    "top-trash": isVi ? "Thùng rác" : "Trash",
+    "welcome-title": isVi ? "Không gian viết dành cho bạn" : "A writing space made for you",
+    "welcome-text": isVi ? "NIKKI giúp bạn giữ nhịp viết riêng tư gọn gàng hơn: mở note nhanh, quản lý nội dung mã hóa và quay lại những ghi chú quan trọng bất cứ lúc nào." : "NIKKI keeps private writing simpler: open notes quickly, manage encrypted content, and return to important entries anytime.",
+    "welcome-open-notes": isVi ? "Mở khu nhật ký" : "Open diary",
+    "welcome-open-shares": isVi ? "Xem chia sẻ" : "Open shares",
+    "summary-active-label": isVi ? "Nhật ký đang hoạt động" : "Active entries",
+    "summary-trash-label": isVi ? "Trong thùng rác" : "In trash",
+    "summary-key-label": isVi ? "Trạng thái mở khóa" : "Unlock status",
+    "activity-title": isVi ? "Nhịp làm việc" : "Workflow",
+    "activity-text": isVi ? "Theo dõi viết, khôi phục và chia sẻ gọn hơn." : "A cleaner flow for writing, restoring, and sharing.",
+    "activity-item-1-title": isVi ? "Tạo hoặc mở note nhanh" : "Create or open notes fast",
+    "activity-item-1-text": isVi ? "Vào khu nhật ký để viết, sửa và lưu." : "Go to the diary area to write, edit, and save.",
+    "activity-item-2-title": isVi ? "Quản lý chia sẻ" : "Manage sharing",
+    "activity-item-2-text": isVi ? "Xem note nhận từ người khác và những gì bạn đã gửi." : "See notes shared with you and the ones you sent.",
+    "activity-item-3-title": isVi ? "Theo dõi bảo mật" : "Track security",
+    "activity-item-3-text": isVi ? "Trạng thái mở khóa và dữ liệu được tách rõ." : "Unlock state and protected data stay clearly separated.",
+    "quick-hints-title": isVi ? "Gợi ý nhanh" : "Quick tips",
+    "quick-hints-text": isVi ? "Luồng bắt đầu nhanh nhất." : "The shortest path to get started.",
+    "quick-hint-1": isVi ? "Mở khu nhật ký để tạo ghi chú mới." : "Open the diary area to create a new note.",
+    "quick-hint-2": isVi ? "Nhấn mở khóa khi cần xem nội dung gốc." : "Unlock when you need the original content.",
+    "quick-hint-3": isVi ? "Dùng khu chia sẻ khi muốn gửi note cho người khác." : "Use the sharing area when you want to send a note.",
+    "security-card-title": isVi ? "Bảo mật cá nhân" : "Personal security",
+    "security-card-text": isVi ? "Cập nhật hiển thị, khóa cá nhân hoặc mật khẩu khi cần." : "Update your display, journal key, or password when needed.",
+    "shared-with-title": isVi ? "Người khác chia sẻ cho tôi" : "Shared with me",
+    "shared-with-text": isVi ? "Xem, chỉnh sửa hoặc ẩn những ghi chú được chia sẻ." : "View, edit, or hide notes that were shared with you.",
+    "shared-by-title": isVi ? "Tôi đã chia sẻ" : "Shared by me",
+    "shared-by-text": isVi ? "Quản lý quyền xem, quyền sửa và link chia sẻ." : "Manage view access, edit access, and share links.",
+    "trash-title": isVi ? "Thùng rác 30 ngày" : "30-day trash",
+    "trash-text": isVi ? "Nội dung trong thùng rác vẫn được giữ mã hóa." : "Trash content remains encrypted before final cleanup.",
+    "profile-display-name-label": isVi ? "Tên hiển thị" : "Display name",
+    "profile-username-label": isVi ? "Tên người dùng" : "Username",
+    "profile-birth-date-label": isVi ? "Ngày sinh" : "Birth date",
+    "profile-email-label": "Email",
+    "profile-gender-label": isVi ? "Giới tính" : "Gender",
+    "profile-gender-option-empty": isVi ? "Chọn" : "Select",
+    "profile-gender-option-male": isVi ? "Nam" : "Male",
+    "profile-gender-option-female": isVi ? "Nữ" : "Female",
+    "profile-gender-option-other": isVi ? "Khác" : "Other",
+    "save-profile": isVi ? "Lưu thông tin" : "Save profile",
+    "open-security-panel": isVi ? "Quản lý bảo mật" : "Manage security",
+    "dashboard-menu-toggle": isVi ? "Danh mục" : "Sections",
+    "calendar-title": isVi ? "Lịch theo tháng" : "Monthly calendar",
+    "calendar-text": isVi ? "Xem trọn một tháng và chọn nhanh tháng cần xem." : "See a full month at a glance and jump quickly to another month.",
+    "calendar-open-picker": isVi ? "Chọn lịch" : "Pick month",
+    "calendar-reminder-text": isVi ? "Nhập nhắc nhở cho ngày bạn chọn." : "Add a reminder for the selected day.",
+    "calendar-agenda-title": isVi ? "Nhắc hẹn trong tháng" : "Monthly reminders",
+    "calendar-agenda-text": isVi ? "Hiện 5 nhắc hẹn gần đến nhất trong tháng này." : "Showing the 5 nearest reminders in this month.",
+    "calendar-weekday-1": isVi ? "T2" : "Mon",
+    "calendar-weekday-2": isVi ? "T3" : "Tue",
+    "calendar-weekday-3": isVi ? "T4" : "Wed",
+    "calendar-weekday-4": isVi ? "T5" : "Thu",
+    "calendar-weekday-5": isVi ? "T6" : "Fri",
+    "calendar-weekday-6": isVi ? "T7" : "Sat",
+    "calendar-weekday-7": isVi ? "CN" : "Sun",
+    "shared-align-left": isVi ? "Trái" : "Left",
+    "shared-align-center": isVi ? "Giữa" : "Center",
+    "shared-align-right": isVi ? "Phải" : "Right",
+    "shared-font-size-label": isVi ? "Kích thước" : "Size",
+    "shared-font-size-option-empty": isVi ? "Chọn" : "Choose",
+    "shared-font-family-label": "Font",
+    "shared-font-family-option-empty": isVi ? "Mặc định" : "Default",
+    "shared-font-color-label": isVi ? "Màu chữ" : "Text color",
+    "shared-highlight-label": isVi ? "Tô nền" : "Highlight",
+    "shared-clear-format": isVi ? "Xóa" : "Clear",
+    "shared-access-key-label": isVi ? "Khóa kiểm thử" : "Share password",
+    "shared-title-label": isVi ? "Tiêu đề" : "Title",
+    "shared-content-label": isVi ? "Nội dung" : "Content",
+    "shared-note-unlock": isVi ? "Mở ghi chú" : "Open note",
+    "shared-note-save": isVi ? "Lưu thay đổi" : "Save changes",
+    "font-color-advanced-toggle": isVi ? "Nâng cao" : "Advanced",
+    "highlight-color-advanced-toggle": isVi ? "Nâng cao" : "Advanced",
+    "share-auth-title": isVi ? "Đăng nhập để tiếp tục" : "Sign in to continue",
+    "share-auth-text": isVi ? "Link chia sẻ bằng public key cần đúng tài khoản người nhận trong trình duyệt này để dùng private key tương ứng." : "This public-key share needs the recipient account in this browser so the correct private key can decrypt it.",
+    "share-login-identifier-label": isVi ? "Email / Tên người dùng" : "Email / Username",
+    "share-login-password-label": isVi ? "Mật khẩu" : "Password",
+    "share-login-submit": isVi ? "Đăng nhập và mở" : "Login and open",
+  };
+
+  Object.entries(textMap).forEach(([id, value]) => {
+    const element = byId(id);
+    if (element) element.textContent = value;
+  });
+
+  if (els.noteSearch) {
+    els.noteSearch.placeholder = isVi ? "Tìm theo tiêu đề..." : "Search by title...";
+  }
+
+  if (els.sharedNoteAccessKey) {
+    els.sharedNoteAccessKey.placeholder = isVi
+      ? "Nhập khóa được người gửi cung cấp."
+      : "Enter the key shared by the sender.";
+  }
+
+  if (els.shareLoginIdentifier) {
+    els.shareLoginIdentifier.placeholder = isVi ? "email@ban.com hoặc ten_dang_nhap" : "you@example.com or username";
+  }
+
+  if (els.shareLoginPassword) {
+    els.shareLoginPassword.placeholder = isVi ? "Nhập mật khẩu" : "Enter password";
+  }
+
+  if (els.calendarNoteInput) {
+    els.calendarNoteInput.placeholder = isVi ? "Nhắc mình điều gì vào ngày này?" : "What do you want to remember on this day?";
+  }
+
+  if (els.calendarSaveNote) {
+    els.calendarSaveNote.textContent = isVi ? "Lưu nhắc nhở" : "Save reminder";
+  }
+
+  if (els.calendarClearNote) {
+    els.calendarClearNote.textContent = isVi ? "Xóa nhắc nhở" : "Delete reminder";
+  }
+
+  if (els.calendarAgendaToggle) {
+    els.calendarAgendaToggle.textContent = state.calendarAgendaExpanded
+      ? (isVi ? "Rút gọn" : "Show less")
+      : (isVi ? "Xem thêm" : "View more");
+  }
+
+  document.querySelectorAll("#note-modal .toolbar-select-label span").forEach((label, index) => {
+    const values = isVi ? ["Kích thước", "Font"] : ["Size", "Font"];
+    if (values[index]) label.textContent = values[index];
+  });
+
+  document.querySelectorAll("#note-color-palette > span, #note-highlight-palette > span").forEach((label, index) => {
+    const values = isVi ? ["Màu chữ", "Tô nền"] : ["Text color", "Highlight"];
+    if (values[index]) label.textContent = values[index];
+  });
+
+  document.querySelectorAll("#share-link-panel label").forEach((label, index) => {
+    const values = isVi ? ["Quyền chia sẻ", "Tài khoản người nhận", "Link chia sẻ"] : ["Share access", "Recipient account", "Share link"];
+    if (values[index]) label.textContent = values[index];
+  });
+
+  if (els.shareTopbarLogin) {
+    els.shareTopbarLogin.textContent = hasStoredLogin() ? (isVi ? "Bảng điều khiển" : "Dashboard") : t().nav.login;
   }
 }
 
@@ -1046,7 +1343,7 @@ async function api(path, options = {}) {
       headers: { "Content-Type": "application/json", ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}), ...(options.headers || {}) },
       ...options,
     });
-    if (response.status === 401 && page === "dashboard") {
+    if (response.status === 401 && page === "dashboard" && !path.startsWith("/auth/") && !window.location.hash.replace("#", "").startsWith("share/")) {
       clearSession();
       goToHome();
       throw new Error("Unauthorized");
@@ -1165,16 +1462,27 @@ function updateSharedViewForEncryption(sharedPayload) {
   const encryptionType = detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType);
   const isSymmetric = encryptionType === "symmetric";
   const isPublicKey = encryptionType === "public-key";
+  const isVi = state.language === "vi";
 
   if (els.sharedNoteAccessKey) {
     els.sharedNoteAccessKey.classList.toggle("hidden", !isSymmetric);
-    els.sharedNoteAccessKey.placeholder = isSymmetric ? "Enter the share password." : "Private key in this browser will be used.";
+    els.sharedNoteAccessKey.placeholder = isSymmetric
+      ? (isVi ? "Nhập khóa được người gửi cung cấp." : "Enter the password shared by the sender.")
+      : (isVi ? "Sẽ dùng private key trong trình duyệt này." : "The private key stored in this browser will be used.");
   }
   if (els.sharedNoteKey) {
     els.sharedNoteKey.textContent = isSymmetric
-      ? "This note uses password-based AES-GCM sharing."
-      : "This note uses public-key sharing and decrypts with the receiver's private key.";
+      ? (isVi ? "Ghi chú này dùng chia sẻ bằng mật khẩu." : "This note uses password-based sharing.")
+      : (isVi ? "Ghi chú này dùng public-key và sẽ giải mã bằng private key của người nhận." : "This note uses public-key sharing and decrypts with the recipient's private key.");
   }
+  updateShareAuthGate(sharedPayload);
+}
+
+function updateShareAuthGate(sharedPayload = state.sharedPayload) {
+  if (!els.shareAuthGate) return;
+  const encryptionType = detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType);
+  const needsLogin = encryptionType === "public-key" && (!hasActiveSession() || !hasStoredPrivateKeyForCurrentUser());
+  els.shareAuthGate.classList.toggle("hidden", !needsLogin);
 }
 
 async function hydrateNote(note, overrideKey = "") {
@@ -1215,6 +1523,7 @@ function setSession(data, password) {
   sessionStorage.setItem("tempPassword", password);
   sessionStorage.setItem("diaryAuthenticatedThisSession", "true");
   sessionStorage.removeItem("personalKey");
+  updateStaticDashboardCopy();
 }
 
 function clearSession() {
@@ -1229,6 +1538,7 @@ function clearSession() {
   state.sharedWithMe = [];
   state.selectedNoteId = null;
   state.selectedSharedNoteId = "";
+  state.shareToken = "";
   state.personalKeyRequestId = "";
   state.profileAccessRequestId = "";
   state.passwordRequestId = "";
@@ -1242,6 +1552,7 @@ function clearSession() {
   sessionStorage.removeItem("personalKey");
   sessionStorage.removeItem("recoveryRequestId");
   sessionStorage.removeItem("diaryAuthenticatedThisSession");
+  updateStaticDashboardCopy();
 }
 
 function isPersonalKeyLinkedToPassword() {
@@ -1362,10 +1673,20 @@ function setEditorMode() {
 
 function switchScreen(screenId) {
   if (!els.screens.length) return;
+  if (screenId !== "share-view") {
+    state.previousScreen = screenId;
+  }
   state.currentScreen = screenId;
+  const dashboardRoot = document.querySelector(".dashboard");
+  const isShareScreen = screenId === "share-view";
+  const isSharedDialog = isShareScreen && state.sharedViewOrigin === "dashboard";
   els.screens.forEach((screen) => screen.classList.toggle("hidden", screen.id !== screenId));
   els.sideButtons.forEach((button) => button.classList.toggle("active", button.dataset.screen === screenId));
-  if (els.fab) els.fab.classList.toggle("hidden", screenId !== "notes");
+  if (els.fab) els.fab.classList.toggle("hidden", isShareScreen);
+  if (dashboardRoot) dashboardRoot.classList.toggle("share-mode", isShareScreen && !isSharedDialog);
+  if (dashboardRoot) dashboardRoot.classList.toggle("share-dialog-mode", isSharedDialog);
+  if (els.publicShareTopbar) els.publicShareTopbar.classList.toggle("hidden", !isShareScreen || isSharedDialog);
+  if (els.sharedViewClose) els.sharedViewClose.classList.toggle("hidden", !isSharedDialog);
   const customScreens = {
     calendar: state.language === "vi"
       ? ["Lịch", "Đánh dấu những ngày quan trọng bằng ghi chú ngắn."]
@@ -1374,6 +1695,7 @@ function switchScreen(screenId) {
   const [title, subtitle] = customScreens[screenId] || t().dashboard.screens[screenId] || ["Dashboard", ""];
   if (els.screenTitle) els.screenTitle.textContent = title;
   if (els.screenSubtitle) els.screenSubtitle.textContent = subtitle;
+  els.topScreenButtons.forEach((button) => button.classList.toggle("active", button.dataset.screen === screenId));
   updateUnlockStateUI();
   setEditorMode();
 }
@@ -1508,6 +1830,25 @@ function formatEditor(command, value = null, target = null) {
   document.execCommand(command, false, value);
 }
 
+function bindColorPalette(containerSelector, command, advancedToggleId, inputId, target = null) {
+  const container = document.querySelector(containerSelector);
+  const advancedToggle = byId(advancedToggleId);
+  const input = byId(inputId);
+  if (!container || !input) return;
+
+  container.querySelectorAll("[data-color]").forEach((button) => on(button, "click", () => {
+    if (!target && !ensureNotesUnlockedForAction()) return;
+    formatEditor(command, button.dataset.color, target);
+  }));
+
+  on(advancedToggle, "click", () => input.click());
+  on(input, "input", () => {
+    if (!target && !ensureNotesUnlockedForAction()) return;
+    if (!input.value) return;
+    formatEditor(command, input.value, target);
+  });
+}
+
 function downloadCurrentNoteAsWord() {
   const title = els.noteTitle.value.trim() || "Diary entry";
   const content = els.noteEditor.innerHTML || "";
@@ -1525,55 +1866,65 @@ function downloadCurrentNoteAsWord() {
 }
 
 function initCalendarControls() {
-  if (!els.calendarYearSelect || !els.calendarMonthSelect || !els.calendarSelectMonth) return;
-
-  const currentYear = new Date().getFullYear();
-  for (let year = currentYear - 5; year <= currentYear + 5; year += 1) {
-    const option = document.createElement("option");
-    option.value = String(year);
-    option.textContent = String(year);
-    els.calendarYearSelect.appendChild(option);
-  }
-
-  const viewDate = new Date(state.calendarViewDate);
-  els.calendarYearSelect.value = String(viewDate.getFullYear());
-  els.calendarMonthSelect.value = String(viewDate.getMonth());
-
-  on(els.calendarSelectMonth, "click", () => {
-    if (els.calendarControlsModal) {
-      els.calendarControlsModal.classList.remove("hidden");
-    }
+  syncCalendarSelectors();
+  on(els.calendarOpenPicker, "click", () => {
+    syncCalendarSelectors();
+    openModal(els.calendarControlsModal);
   });
-
-  on(els.calendarControlsClose, "click", () => {
-    if (els.calendarControlsModal) {
-      els.calendarControlsModal.classList.add("hidden");
-    }
-  });
-
-  on(els.calendarControlsApply, "click", () => {
-    const year = parseInt(els.calendarYearSelect.value, 10);
-    const month = parseInt(els.calendarMonthSelect.value, 10);
-    state.calendarViewDate = new Date(year, month, 1).toISOString();
+  on(els.calendarMonthInline, "change", () => {
+    const month = Number(els.calendarMonthInline?.value || 0);
+    const year = Number(els.calendarYearInline?.value || new Date(state.calendarViewDate).getFullYear());
+    state.calendarViewDate = new Date(year, month, 1);
     renderCalendarWidget();
-    if (els.calendarControlsModal) {
-      els.calendarControlsModal.classList.add("hidden");
-    }
   });
-
+  on(els.calendarYearInline, "change", () => {
+    const month = Number(els.calendarMonthInline?.value || new Date(state.calendarViewDate).getMonth());
+    const year = Number(els.calendarYearInline?.value || new Date().getFullYear());
+    state.calendarViewDate = new Date(year, month, 1);
+    renderCalendarWidget();
+  });
   on(els.calendarPrev, "click", () => {
     const viewDate = new Date(state.calendarViewDate);
-    viewDate.setMonth(viewDate.getMonth() - 1);
-    state.calendarViewDate = viewDate.toISOString();
+    state.calendarViewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
     renderCalendarWidget();
   });
 
   on(els.calendarNext, "click", () => {
     const viewDate = new Date(state.calendarViewDate);
-    viewDate.setMonth(viewDate.getMonth() + 1);
-    state.calendarViewDate = viewDate.toISOString();
+    state.calendarViewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
     renderCalendarWidget();
   });
+
+  on(els.calendarSaveNote, "click", () => {
+    if (!state.notesUnlocked || !els.calendarNoteInput) return showToast(t().toasts.needUnlock);
+    state.calendarNotes[state.selectedCalendarDate] = els.calendarNoteInput.value.trim();
+    saveCalendarNotes();
+    renderCalendarWidget();
+    showToast(state.language === "vi" ? "Đã lưu nhắc nhở." : "Reminder saved.");
+  });
+
+  on(els.calendarClearNote, "click", () => {
+    if (!state.notesUnlocked) return showToast(t().toasts.needUnlock);
+    delete state.calendarNotes[state.selectedCalendarDate];
+    saveCalendarNotes();
+    renderCalendarWidget();
+    showToast(state.language === "vi" ? "Đã xóa nhắc nhở." : "Reminder deleted.");
+  });
+
+  on(els.calendarAgendaToggle, "click", () => {
+    state.calendarAgendaExpanded = !state.calendarAgendaExpanded;
+    renderCalendarAgenda();
+  });
+
+  on(els.calendarControlsApply, "click", () => {
+    const month = Number(els.calendarMonthSelect?.value || 0);
+    const year = Number(els.calendarYearSelect?.value || new Date().getFullYear());
+    state.calendarViewDate = new Date(year, month, 1);
+    closeModal(els.calendarControlsModal);
+    renderCalendarWidget();
+  });
+
+  on(els.calendarControlsClose, "click", () => closeModal(els.calendarControlsModal));
 }
 
 // BẬT MODAL CHIA SẺ
@@ -1956,37 +2307,56 @@ async function finalizeAccountDeletion() {
   } catch (error) { showToast(error.message); }
 }
 
+async function loadSharedNoteForSession(shareId) {
+  if (!hasActiveSession() || !shareId) return null;
+  try {
+    return await api(`/notes/shares/${shareId}`);
+  } catch {
+    return null;
+  }
+}
+
+async function hydrateSharedPayloadFromSession(sharedPayload) {
+  const resolved = await loadSharedNoteForSession(sharedPayload?.id || state.selectedSharedNoteId);
+  return resolved || sharedPayload;
+}
+
 async function loadSharedNote() {
   const hash = window.location.hash.replace("#", "");
   if (!hash.startsWith("share/")) return false;
   const shareToken = hash.split("/")[1];
-  const sidebar = document.querySelector(".sidebar");
-  const userMenu = document.querySelector(".user-menu");
+  state.shareToken = shareToken;
+  state.sharedViewOrigin = "public";
   try {
-      const data = await api(`/notes/shared/${shareToken}`);
-      state.sharedPayload = data;
-      state.selectedSharedNoteId = data.id || "";
-      if (sidebar) sidebar.classList.add("hidden");
-      if (userMenu) userMenu.classList.add("hidden");
-      switchScreen("share-view");
-      els.sharedNoteTitle.textContent = data.title || t().toasts.encryptedTitle;
-      updateSharedViewForEncryption(data);
-      if (els.sharedNoteTitleInput) els.sharedNoteTitleInput.value = data.title || "";
-      if (els.sharedNoteEditor) els.sharedNoteEditor.innerHTML = data.encryptedContent || "";
-      if (els.sharedNoteSave) els.sharedNoteSave.classList.add("hidden");
-
-      if (detectShareEncryptionType(data.encryptedContent, data.encryptionType) === "public-key") {
-        const content = await decryptSharedPayload(data);
-        if (content && els.sharedNoteEditor) {
-          els.sharedNoteEditor.innerHTML = content;
-          const canEdit = Boolean(data.canEdit && (data.isOwner || data.isRecipient));
-          els.sharedNoteEditor.contentEditable = canEdit;
-          if (els.sharedNoteTitleInput) els.sharedNoteTitleInput.readOnly = !canEdit;
-          if (els.sharedToolbar) els.sharedToolbar.classList.toggle("hidden", !canEdit);
-          if (els.sharedNoteSave) els.sharedNoteSave.classList.toggle("hidden", !canEdit);
-          if (els.sharedNoteUnlock) els.sharedNoteUnlock.classList.add("hidden");
-        }
+    const publicPayload = await api(`/notes/shared/${shareToken}`);
+    const data = await hydrateSharedPayloadFromSession(publicPayload);
+    state.sharedPayload = data;
+    state.selectedSharedNoteId = data.id || "";
+    switchScreen("share-view");
+    els.sharedNoteTitle.textContent = data.title || t().toasts.encryptedTitle;
+    updateSharedViewForEncryption(data);
+    if (els.sharedNoteTitleInput) {
+      els.sharedNoteTitleInput.value = data.title || "";
+      els.sharedNoteTitleInput.readOnly = true;
+    }
+    if (els.sharedNoteEditor) {
+      els.sharedNoteEditor.innerHTML = data.encryptedContent || "";
+      els.sharedNoteEditor.contentEditable = false;
+    }
+    if (els.sharedToolbar) els.sharedToolbar.classList.add("hidden");
+    if (els.sharedNoteSave) els.sharedNoteSave.classList.add("hidden");
+    if (detectShareEncryptionType(data.encryptedContent, data.encryptionType) === "public-key" && hasActiveSession() && hasStoredPrivateKeyForCurrentUser()) {
+      const content = await decryptSharedPayload(data);
+      if (content && els.sharedNoteEditor) {
+        els.sharedNoteEditor.innerHTML = content;
+        const canEdit = Boolean(data.canEdit && (data.isOwner || data.isRecipient));
+        els.sharedNoteEditor.contentEditable = canEdit;
+        if (els.sharedNoteTitleInput) els.sharedNoteTitleInput.readOnly = !canEdit;
+        if (els.sharedToolbar) els.sharedToolbar.classList.toggle("hidden", !canEdit);
+        if (els.sharedNoteSave) els.sharedNoteSave.classList.toggle("hidden", !canEdit);
+        if (els.sharedNoteUnlock) els.sharedNoteUnlock.classList.add("hidden");
       }
+    }
   } catch (error) {
     showToast(error.message || t().toasts.sharedLoadError);
   }
@@ -1998,9 +2368,10 @@ window.openSharedDashboardNote = async function openSharedDashboardNote(shareId)
     const data = await api(`/notes/shares/${shareId}`);
     state.sharedPayload = data;
     state.selectedSharedNoteId = shareId;
+    state.sharedViewOrigin = "dashboard";
     switchScreen("share-view");
 
-    els.sharedNoteTitle.textContent = data.title || "Shared note";
+    els.sharedNoteTitle.textContent = data.title || t().dashboard.screens["share-view"][0];
     updateSharedViewForEncryption(data);
     if (els.sharedNoteUnlock) els.sharedNoteUnlock.classList.remove("hidden");
 
@@ -2088,7 +2459,7 @@ function initHomePage() {
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
   on(els.brandHome, "click", () => goToHome("home"));
-  on(els.navLogin, "click", () => goToLogin());
+  on(els.navLogin, "click", () => (hasStoredLogin() ? goToDashboard() : goToLogin()));
   on(els.heroAbout, "click", () => byId("about")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   on(els.heroLogin, "click", () => goToLogin());
   const section = byId(window.location.hash.replace("#", ""));
@@ -2100,7 +2471,7 @@ function initLoginPage() {
   if (state.token && state.user && state.hasAuthenticatedInSession) return goToDashboard();
   toggleAuthCard(state.pendingId || state.forgotPasswordRequestId ? "otp" : "login");
   on(els.brandHome, "click", () => goToHome("home"));
-  on(els.navLogin, "click", goToLogin);
+  on(els.navLogin, "click", () => (hasStoredLogin() ? goToDashboard() : goToLogin()));
   els.navButtons.forEach((button) => on(button, "click", () => goToHome(button.dataset.section)));
   on(els.authTabLogin, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("login"); });
   on(els.authTabRegister, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("register"); });
@@ -2140,8 +2511,15 @@ function initLoginPage() {
   
   on(els.registerSubmit, "click", async () => {
     try {
+      const username = normalizeUsername(els.registerUsername.value);
+      if (!isValidUsername(username)) {
+        return showToast(state.language === "vi"
+          ? "Tên người dùng chỉ được dùng chữ thường không dấu, số hoặc dấu gạch dưới, dài 4-32 ký tự."
+          : "Username must use 4-32 lowercase letters, numbers, or underscores only.");
+      }
+      els.registerUsername.value = username;
       await window.NikkiSecurity?.createPendingRegistrationKeyPair(els.registerEmail.value.trim());
-      const data = await api("/auth/register", { method: "POST", body: JSON.stringify({ username: els.registerUsername.value.trim(), email: els.registerEmail.value.trim(), password: els.registerPassword.value }) });
+      const data = await api("/auth/register", { method: "POST", body: JSON.stringify({ username, email: els.registerEmail.value.trim(), password: els.registerPassword.value }) });
       state.authFlow = "register";
       state.pendingId = data.pendingId;
       sessionStorage.setItem("authFlow", "register");
@@ -2224,12 +2602,19 @@ function initDashboardPage() {
       dashboard.classList.toggle("sidebar-closed");
     }
   });
-  // Nút Ngôi Nhà: Nhảy về màn hình Tổng quan Dashboard
-  on(byId("dashboard-home-btn"), "click", () => {
-    switchScreen("dashboard-home");
+  on(els.shareBrandHome, "click", () => goToHome("home"));
+  els.navButtons.forEach((button) => on(button, "click", () => goToHome(button.dataset.section)));
+  on(els.shareTopbarLogin, "click", () => {
+    if (hasStoredLogin()) return goToDashboard();
+    goToLogin();
   });
 
   document.querySelectorAll(".welcome-actions [data-screen]").forEach((button) => on(button, "click", async () => {
+    switchScreen(button.dataset.screen);
+    if (button.dataset.screen === "profile") await loadProfile();
+    if (button.dataset.screen === "notes" && !state.selectedNoteId) resetNoteEditorForNewEntry();
+  }));
+  els.topScreenButtons.forEach((button) => on(button, "click", async () => {
     switchScreen(button.dataset.screen);
     if (button.dataset.screen === "profile") await loadProfile();
     if (button.dataset.screen === "notes" && !state.selectedNoteId) resetNoteEditorForNewEntry();
@@ -2242,6 +2627,10 @@ function initDashboardPage() {
   on(els.sharedNoteUnlock, "click", async () => {
     if (!state.sharedPayload || state.sharedPayload.canView === false) return showToast(t().toasts.invalidKey);
     const encryptionType = detectShareEncryptionType(state.sharedPayload.encryptedContent, state.sharedPayload.encryptionType);
+    if (encryptionType === "public-key" && (!hasActiveSession() || !hasStoredPrivateKeyForCurrentUser())) {
+      updateShareAuthGate(state.sharedPayload);
+      return showToast(state.language === "vi" ? "Hãy đăng nhập đúng tài khoản người nhận để mở ghi chú này." : "Please sign in with the recipient account to open this note.");
+    }
     const password = encryptionType === "symmetric" ? (els.sharedNoteAccessKey?.value.trim() || "") : "";
     const content = await decryptSharedPayload(state.sharedPayload, password);
     if (!content) return showToast(t().toasts.sharedUnlockFailed);
@@ -2290,6 +2679,22 @@ function initDashboardPage() {
       });
       showToast(t().toasts.shareSaved);
       await refreshSharedNotes();
+    } catch (error) { showToast(error.message); }
+  });
+  on(els.shareLoginSubmit, "click", async () => {
+    try {
+      const identifier = els.shareLoginIdentifier?.value.trim() || "";
+      const password = els.shareLoginPassword?.value || "";
+      const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password }) });
+      setSession(data, password);
+      await ensureUserKeyPair();
+      const refreshed = await hydrateSharedPayloadFromSession(state.sharedPayload || { id: state.selectedSharedNoteId });
+      if (refreshed) {
+        state.sharedPayload = refreshed;
+        updateSharedViewForEncryption(refreshed);
+      }
+      showToast(t().toasts.loginSuccess);
+      await loadSharedNote();
     } catch (error) { showToast(error.message); }
   });
   
@@ -2348,6 +2753,8 @@ function initDashboardPage() {
     if (!ensureNotesUnlockedForAction()) return;
     formatEditor("hiliteColor", els.highlightColorInput.value);
   });
+  bindColorPalette("#note-color-palette", "foreColor", "font-color-advanced-toggle", "font-color");
+  bindColorPalette("#note-highlight-palette", "hiliteColor", "highlight-color-advanced-toggle", "highlight-color");
   
   on(els.clearFormat, "click", () => formatEditor("removeFormat"));
   
@@ -2434,6 +2841,10 @@ function initDashboardPage() {
   on(els.recoverySubmit, "click", confirmRecoveryOtp);
   on(els.recoveryClose, "click", () => closeModal(els.recoveryModal));
   on(els.noteModalClose, "click", closeNoteModal);
+  on(els.sharedViewClose, "click", () => {
+    state.sharedViewOrigin = "dashboard";
+    switchScreen(state.previousScreen || "shared-notes");
+  });
   
   on(els.profileAccessSubmit, "click", async () => {
     const key = els.profileAccessKey.value.trim();
@@ -2453,31 +2864,6 @@ function initDashboardPage() {
     showToast(t().toasts.shareCreated);
   });
   
-  on(els.calendarPrev, "click", () => {
-    state.calendarViewDate = new Date(state.calendarViewDate.getFullYear(), state.calendarViewDate.getMonth() - 1, 1);
-    renderCalendarWidget();
-  });
-  on(els.calendarNext, "click", () => {
-    state.calendarViewDate = new Date(state.calendarViewDate.getFullYear(), state.calendarViewDate.getMonth() + 1, 1);
-    renderCalendarWidget();
-  });
-  on(els.calendarSaveNote, "click", () => {
-    const value = (els.calendarNoteInput?.value || "").trim();
-    if (!value) {
-      delete state.calendarNotes[state.selectedCalendarDate];
-    } else {
-      state.calendarNotes[state.selectedCalendarDate] = value.slice(0, 120);
-    }
-    saveCalendarNotes();
-    renderCalendarWidget();
-    showToast(state.language === "vi" ? "Đã lưu nhắc lịch." : "Calendar note saved.");
-  });
-  on(els.calendarClearNote, "click", () => {
-    delete state.calendarNotes[state.selectedCalendarDate];
-    saveCalendarNotes();
-    renderCalendarWidget();
-    showToast(state.language === "vi" ? "Đã xóa nhắc lịch." : "Calendar note removed.");
-  });
   on(els.notesUnlockConfirm, "click", confirmUnlockNotes);
   on(els.notesUnlockClose, "click", () => closeModal(els.notesUnlockModal));
   

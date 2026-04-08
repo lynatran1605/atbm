@@ -1,645 +1,103 @@
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NIKKI Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css" />
-    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
-  </head>
-  <body data-page="dashboard">
-    <main class="main-shell">
-      <section class="dashboard" style="position: relative;">
-        <aside class="sidebar">
-            <div class="sidebar-logo">NIKKI</div>
-            <p class="sidebar-note">Kh&#244;ng gian ri&#234;ng cho vi&#7871;t, l&#432;u v&#224; qu&#7843;n l&#253; nh&#7853;t k&#253; c&#225; nh&#226;n.</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NIKKI Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
+</head>
+<body data-page="dashboard">
+  <header id="public-share-topbar" class="home-topbar share-public-topbar hidden">
+    <div class="home-topbar-left">
+      <button id="share-brand-home" class="home-logo-btn" type="button" aria-label="NIKKI home"><img src="./images/logo-hub.webp" alt="NIKKI logo" class="home-logo-image" /></button>
+      <div class="home-brand-copy"><strong class="home-brand-name">NIKKI</strong></div>
+    </div>
+    <div class="home-top-actions">
+      <nav class="nav-links home-nav-links" aria-label="Primary navigation">
+        <button data-section="home" class="nav-btn" type="button">Home</button>
+        <button data-section="features" class="nav-btn" type="button">Features</button>
+        <button data-section="about" class="nav-btn" type="button">About Us</button>
+      </nav>
+      <button id="share-topbar-login" class="nav-btn nav-login" type="button">Login</button>
+    </div>
+  </header>
+
+  <main class="main-shell">
+    <section class="dashboard">
+      <aside class="sidebar">
+        <div class="sidebar-logo">NIKKI</div>
+        <p id="sidebar-note" class="sidebar-note">Kh&#244;ng gian ri&#234;ng cho vi&#7871;t, l&#432;u v&#224; qu&#7843;n l&#253; nh&#7853;t k&#253; c&#225; nh&#226;n.</p>
+        <div class="sidebar-group">
+          <button id="side-dashboard-home" class="side-btn active" data-screen="dashboard-home" type="button">Trang ch&#7911;</button>
+          <button id="side-calendar" class="side-btn" data-screen="calendar" type="button">L&#7883;ch</button>
+          <button id="side-notes" class="side-btn" data-screen="notes" type="button">Nh&#7853;t k&#253;</button>
+          <button id="side-shared-notes" class="side-btn" data-screen="shared-notes" type="button">Nh&#7853;t k&#253; &#273;&#432;&#7907;c chia s&#7867;</button>
+          <button id="side-trash" class="side-btn" data-screen="trash" type="button">Th&#249;ng r&#225;c</button>
+        </div>
+        <div class="sidebar-footer"><strong id="sidebar-footer-title">Ri&#234;ng t&#432; tr&#432;&#7899;c ti&#234;n</strong><p id="sidebar-footer-text">N&#7897;i dung ch&#7881; hi&#7875;n th&#7883; r&#245; sau khi b&#7841;n ch&#7911; &#273;&#7897;ng m&#7903; kh&#243;a.</p></div>
+      </aside>
+
+      <section class="dashboard-content">
+        <div class="dashboard-header">
+          <div class="dashboard-topbar-left">
+            <div class="dashboard-top-nav-row"><button id="dashboard-menu-toggle" class="nav-pill-btn dashboard-nav-toggle" type="button">Danh m&#7909;c</button><nav id="dashboard-top-nav" class="dashboard-top-nav" aria-label="Dashboard navigation"><button id="top-dashboard-home" class="side-btn top-screen-btn active" data-screen="dashboard-home" type="button">Trang ch&#7911;</button><button id="top-calendar" class="side-btn top-screen-btn" data-screen="calendar" type="button">L&#7883;ch</button><button id="top-notes" class="side-btn top-screen-btn" data-screen="notes" type="button">Nh&#7853;t k&#253;</button><button id="top-shared-notes" class="side-btn top-screen-btn" data-screen="shared-notes" type="button">Nh&#7853;t k&#253; &#273;&#432;&#7907;c chia s&#7867;</button><button id="top-trash" class="side-btn top-screen-btn" data-screen="trash" type="button">Th&#249;ng r&#225;c</button></nav></div>
+            <div class="header-titles"><h1 id="screen-title" class="topbar-title">T&#7893;ng quan</h1><p id="screen-subtitle" class="topbar-subtitle">Qu&#7843;n l&#253; nh&#7853;t k&#253; an to&#224;n v&#224; ri&#234;ng t&#432;.</p></div>
           </div>
-
-          <div class="sidebar-group">
-            <button class="side-btn active" data-screen="dashboard-home">Trang ch&#7911;</button>
-            <button class="side-btn" data-screen="calendar">L&#7883;ch</button>
-            <button class="side-btn" data-screen="notes">Nh&#7853;t k&#253;</button>
-            <button class="side-btn" data-screen="shared-notes">Nh&#7853;t k&#253; &#273;&#432;&#7907;c chia s&#7867;</button>
-            <button class="side-btn" data-screen="trash">Th&#249;ng r&#225;c</button>
+          <div class="dashboard-topbar-right">
+            <button id="language-toggle" class="nav-pill-btn" type="button">EN</button>
+            <button id="theme-toggle" class="icon-btn" type="button" aria-label="Theme"><svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle></svg><svg class="moon-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button>
+            <div class="user-menu"><button id="user-dropdown-trigger" class="user-badge" type="button">User</button><div id="user-dropdown" class="dropdown hidden panel-shell"><button data-profile-action="profile" type="button" class="dropdown-item">H&#7891; s&#417; &amp; B&#7843;o m&#7853;t</button><button data-profile-action="switch" type="button" class="dropdown-item">Chuy&#7875;n t&#224;i kho&#7843;n</button><button data-profile-action="logout" type="button" class="dropdown-item danger-text">&#272;&#259;ng xu&#7845;t</button></div></div>
           </div>
-
-          <div class="sidebar-footer">
-            <strong>Ri&#234;ng t&#432; tr&#432;&#7899;c ti&#234;n</strong>
-            <p>N&#7897;i dung ch&#7881; hi&#7875;n th&#7883; r&#245; sau khi b&#7841;n ch&#7911; &#273;&#7897;ng m&#7903; kh&#243;a.</p>
-          </div>
-        </aside>
-        
-        <div class="parent-container">
-        <section class="dashboard-content">
-          <div class="dashboard-header">
-            
-            <div class="dashboard-topbar-left">
-              <div class="nav-pill-container">
-                <button id="dashboard-menu-toggle" class="icon-btn" type="button" aria-label="Menu">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                </button>
-                <div class="nav-divider"></div>
-                <button id="dashboard-home-btn" class="icon-btn" type="button" aria-label="Home">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                </button>
-              </div>
-
-              <div class="header-titles">
-                <h1 id="screen-title" class="topbar-title">Tổng quan</h1>
-                <p id="screen-subtitle" class="topbar-subtitle">Quản lý nhật ký an toàn và riêng tư.</p>
-              </div>
-            </div>
-
-            <div class="dashboard-topbar-right">
-              
-              <button id="language-toggle" class="nav-pill-btn" type="button">EN</button>
-              
-              <button id="theme-toggle" class="icon-btn" type="button" aria-label="Theme">
-                <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                <svg class="moon-icon hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-              </button>
-
-              <div class="user-menu">
-                <button id="user-dropdown-trigger" class="user-badge" type="button">User</button>
-                <div id="user-dropdown" class="dropdown hidden panel-shell">
-                  <button data-profile-action="profile" type="button" class="dropdown-item">Hồ sơ & Bảo mật</button>
-                  <button data-profile-action="switch" type="button" class="dropdown-item">Chuyển tài khoản</button>
-                  <button data-profile-action="logout" type="button" class="dropdown-item danger-text">Đăng xuất</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="dashboard-home" class="screen">
-            <div class="dashboard-home-layout">
-              <div class="dashboard-home-main">
-                <section class="welcome-card">
-                  <h2>Kh&#244;ng gian vi&#7871;t d&#224;nh cho b&#7841;n</h2>
-                  <p>NIKKI gi&#250;p b&#7841;n gi&#7919; nh&#7883;p vi&#7871;t ri&#234;ng t&#432; g&#7885;n g&#224;ng h&#417;n: m&#7903; note nhanh, qu&#7843;n l&#253; tr&#7841;ng th&#225;i m&#227; h&#243;a v&#224; quay l&#7841;i nh&#7919;ng ghi ch&#250; quan tr&#7885;ng b&#7845;t c&#7913; l&#250;c n&#224;o.</p>
-                  <div class="welcome-actions">
-                    <button class="primary-btn" data-screen="notes" type="button">M&#7903; khu nh&#7853;t k&#253;</button>
-                    <button class="secondary-btn" data-screen="shared-notes" type="button">Xem chia s&#7867;</button>
-                  </div>
-                </section>
-
-                <section class="summary-grid">
-                  <div class="summary-card">
-                    <span>Nh&#7853;t k&#253; &#273;ang ho&#7841;t &#273;&#7897;ng</span>
-                    <strong id="active-count">0</strong>
-                  </div>
-                  <div class="summary-card">
-                    <span>Trong th&#249;ng r&#225;c</span>
-                    <strong id="trash-count">0</strong>
-                  </div>
-                  <div class="summary-card">
-                    <span>Tr&#7841;ng th&#225;i m&#7903; kh&#243;a</span>
-                    <strong id="key-status">&#272;&#227; kh&#243;a</strong>
-                  </div>
-                </section>
-
-                <section class="activity-card">
-                  <h3>Nh&#7883;p l&#224;m vi&#7879;c</h3>
-                  <p>M&#7897;t b&#7889; c&#7909;c r&#245; h&#417;n &#273;&#7875; b&#7841;n theo d&#245;i vi&#7871;t, kh&#244;i ph&#7909;c v&#224; chia s&#7867; m&#224; kh&#244;ng b&#7883; r&#7889;i.</p>
-                  <div class="activity-list">
-                    <div class="activity-item">
-                      <span class="activity-dot"></span>
-                      <div>
-                        <strong>T&#7841;o ho&#7863;c m&#7903; note nhanh</strong>
-                        <span>V&#224;o khu nh&#7853;t k&#253; &#273;&#7875; vi&#7871;t, s&#7917;a v&#224; l&#432;u n&#7897;i dung m&#227; h&#243;a.</span>
-                      </div>
-                    </div>
-                    <div class="activity-item">
-                      <span class="activity-dot"></span>
-                      <div>
-                        <strong>Qu&#7843;n l&#253; chia s&#7867; r&#245; r&#224;ng</strong>
-                        <span>Xem note nh&#7853;n t&#7915; ng&#432;&#7901;i kh&#225;c v&#224; nh&#7919;ng g&#236; b&#7841;n &#273;&#227; g&#7917;i &#273;i.</span>
-                      </div>
-                    </div>
-                    <div class="activity-item">
-                      <span class="activity-dot"></span>
-                      <div>
-                        <strong>Theo d&#245;i b&#7843;o m&#7853;t d&#7877; h&#417;n</strong>
-                        <span>Tr&#7841;ng th&#225;i m&#7903; kh&#243;a, OTP v&#224; d&#7919; li&#7879;u trong th&#249;ng r&#225;c &#273;&#432;&#7907;c t&#225;ch khu v&#7921;c r&#245;.</span>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <div class="dashboard-home-side">
-                <section class="status-card">
-                  <h3>G&#7907;i &#253; nhanh</h3>
-                  <p>N&#7871;u b&#7841;n mu&#7889;n b&#7855;t &#273;&#7847;u ngay, &#273;&#226;y l&#224; lu&#7891;ng ng&#7855;n nh&#7845;t.</p>
-                  <ul>
-                    <li>M&#7903; khu nh&#7853;t k&#253; &#273;&#7875; t&#7841;o ghi ch&#250; m&#7899;i.</li>
-                    <li>Nh&#7845;n m&#7903; kh&#243;a khi c&#7847;n xem n&#7897;i dung g&#7889;c.</li>
-                    <li>D&#249;ng khu chia s&#7867; khi mu&#7889;n g&#7917;i note cho ng&#432;&#7901;i kh&#225;c.</li>
-                  </ul>
-                </section>
-
-                <section class="quick-card">
-                  <h3>B&#7843;o m&#7853;t c&#225; nh&#226;n</h3>
-                  <p>V&#224;o th&#244;ng tin c&#225; nh&#226;n &#273;&#7875; c&#7853;p nh&#7853;t hi&#7875;n th&#7883;, kh&#243;a c&#225; nh&#226;n ho&#7863;c m&#7853;t kh&#7849;u khi c&#7847;n.</p>
-                </section>
-              </div>
-            </div>
-          </div>
-
-          <div id="notes" class="screen hidden">
-            <div class="editor-card">
-              <div class="toolbar">
-                <input id="note-search" type="text" placeholder="T&#236;m theo ti&#234;u &#273;&#7873;..." />
-                <button id="unlock-notes" class="secondary-btn" type="button">M&#7903; kh&#243;a nh&#7853;t k&#253;</button>
-              </div>
-              <p id="notes-security-hint" class="security-hint"></p>
-              <div id="notes-list" class="notes-list note-card-grid"></div>
-            </div>
-          </div>
-
-          <div id="shared-notes" class="screen hidden">
-            <div class="shared-grid">
-              <section class="shared-column panel-shell">
-                <div class="shared-heading">
-                  <h3>Ng&#432;&#7901;i kh&#225;c chia s&#7867; cho t&#244;i</h3>
-                  <p>Xem, ch&#7881;nh s&#7917;a ho&#7863;c &#7849;n nh&#7919;ng ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p>
-                </div>
-                <div id="shared-with-me-list" class="notes-list"></div>
-              </section>
-              <section class="shared-column panel-shell">
-                <div class="shared-heading">
-                  <h3>T&#244;i &#273;&#227; chia s&#7867;</h3>
-                  <p>Qu&#7843;n l&#253; quy&#7873;n xem, quy&#7873;n s&#7917;a v&#224; link chia s&#7867; c&#7911;a b&#7841;n.</p>
-                </div>
-                <div id="shared-by-me-list" class="notes-list"></div>
-              </section>
-            </div>
-          </div>
-
-          <div id="trash" class="screen hidden">
-            <h3>Th&#249;ng r&#225;c 30 ng&#224;y</h3>
-            <p>N&#7897;i dung trong th&#249;ng r&#225;c v&#7851;n &#273;&#432;&#7907;c gi&#7919; m&#227; h&#243;a tr&#432;&#7899;c khi b&#7883; x&#243;a v&#297;nh vi&#7877;n.</p>
-            <div id="trash-list" class="notes-list trash-list"></div>
-          </div>
-
-          <div id="calendar" class="screen hidden">
-            <section class="calendar-card calendar-screen-card">
-              <div class="calendar-head">
-                <div>
-                  <h3>L&#7883;ch nh&#7855;c nhanh</h3>
-                  <p>Ghi ng&#7855;n cho nh&#7919;ng ng&#224;y quan tr&#7885;ng.</p>
-                </div>
-                <div class="calendar-nav">
-                  <button id="calendar-select-month" class="secondary-btn" type="button">Chọn tháng</button>
-                  <button id="calendar-prev" class="secondary-btn" type="button">&#8249;</button>
-                  <button id="calendar-next" class="secondary-btn" type="button">&#8250;</button>
-                </div>
-              </div>
-              <div id="calendar-month-label" class="calendar-month-label"></div>
-              <div class="calendar-weekdays">
-                <span>T2</span>
-                <span>T3</span>
-                <span>T4</span>
-                <span>T5</span>
-                <span>T6</span>
-                <span>T7</span>
-                <span>CN</span>
-              </div>
-              <div id="calendar-grid" class="calendar-grid"></div>
-              <div class="calendar-note-panel">
-                <strong id="calendar-selected-date">Ch&#432;a ch&#7885;n ng&#224;y</strong>
-                <textarea id="calendar-note-input" rows="3" maxlength="120" placeholder="Vi&#7871;t nh&#7855;c ng&#7855;n cho ng&#224;y n&#224;y..."></textarea>
-                <div class="calendar-note-actions">
-                  <button id="calendar-save-note" class="primary-btn" type="button">L&#432;u nh&#7855;c</button>
-                  <button id="calendar-clear-note" class="text-btn" type="button">X&#243;a nh&#7855;c</button>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <div id="profile" class="screen hidden">
-            <div class="profile-grid">
-              <div class="field"><label>T&#234;n hi&#7875;n th&#7883;</label><input id="profile-display-name" type="text" /></div>
-              <div class="field"><label>T&#234;n ng&#432;&#7901;i d&#249;ng</label><input id="profile-username" type="text" readonly /></div>
-              <div class="field"><label>Ng&#224;y sinh</label><input id="profile-birth-date" type="date" /></div>
-              <div class="field"><label>Email</label><input id="profile-email" type="email" readonly /></div>
-              <div class="field">
-                <label>Gi&#7899;i t&#237;nh</label>
-                <select id="profile-gender">
-                  <option value="">Ch&#7885;n</option>
-                  <option value="Nam">Nam</option>
-                  <option value="N&#7919;">N&#7919;</option>
-                  <option value="Kh&#225;c">Kh&#225;c</option>
-                </select>
-              </div>
-            </div>
-            <div class="editor-actions">
-              <button id="save-profile" class="primary-btn" type="button">L&#432;u th&#244;ng tin</button>
-              <button id="open-security-panel" class="secondary-btn" type="button">Qu&#7843;n l&#253; b&#7843;o m&#7853;t</button>
-            </div>
-          </div>
-
-          <div id="share-view" class="screen hidden">
-            <div class="shared-note-shell panel-shell">
-              <div class="shared-note-head">
-                <div>
-                  <h3 id="shared-note-title">Shared Note</h3>
-                  <p id="shared-note-key">Nh&#7853;p kh&#243;a ki&#7875;m th&#7917; &#273;&#7875; m&#7903; ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p>
-                </div>
-                <div class="shared-note-actions">
-                  <button id="shared-note-unlock" class="secondary-btn" type="button">M&#7903; ghi ch&#250;</button>
-                  <button id="shared-note-save" class="primary-btn hidden" type="button">L&#432;u thay &#273;&#7893;i</button>
-                </div>
-              </div>
-              <div class="editor-toolbar shared-toolbar hidden">
-                <button data-command="bold" type="button"><b>B</b></button>
-                <button data-command="italic" type="button"><i>I</i></button>
-                <button data-command="underline" type="button"><u>U</u></button>
-                <button data-command="justifyLeft" type="button">Tr&#225;i</button>
-                <button data-command="justifyCenter" type="button">Gi&#7919;a</button>
-                <button data-command="justifyRight" type="button">Ph&#7843;i</button>
-
-                <label class="toolbar-select-label">
-                  <span>K&#237;ch th&#432;&#7901;c</span>
-                  <select id="shared-font-size-select">
-                    <option value="">Ch&#7885;n</option>
-                    <option value="1">10</option>
-                    <option value="2">12</option>
-                    <option value="3">14</option>
-                    <option value="4">18</option>
-                    <option value="5">24</option>
-                    <option value="6">28</option>
-                    <option value="7">32</option>
-                  </select>
-                </label>
-
-                <label class="toolbar-select-label">
-                  <span>Font</span>
-                  <select id="shared-font-family-select">
-                    <option value="">M&#7841;c &#273;&#7883;nh</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Calibri">Calibri</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                    <option value="Verdana">Verdana</option>
-                  </select>
-                </label>
-
-                <label class="toolbar-select-label">
-                  <span>M&#224;u ch&#7911;</span>
-                  <input id="shared-font-color" type="color" title="Ch&#7885;n m&#224;u ch&#7911;" />
-                </label>
-
-                <label class="toolbar-select-label">
-                  <span>Highlighter</span>
-                  <input id="shared-highlight-color" type="color" title="Đánh dấu chữ" />
-                </label>
-
-                <button id="shared-clear-format" type="button" title="X&#243;a &#273;&#7889;nh d&#7841;ng">X&#243;a</button>
-              </div>
-              <div class="field">
-                <label>Kh&#243;a ki&#7875;m th&#7917;</label>
-                <div class="share-row">
-                  <input id="shared-note-access-key" type="password" placeholder="Nh&#7853;p kh&#243;a &#273;&#432;&#7907;c ng&#432;&#7901;i g&#7917;i cung c&#7845;p." />
-                </div>
-              </div>
-              <div class="field">
-                <label>Ti&#234;u &#273;&#7873;</label>
-                <input id="shared-note-title-input" type="text" readonly />
-              </div>
-              <div class="field">
-                <label>N&#7897;i dung</label>
-                <div id="shared-note-editor" class="editor" contenteditable="false"></div>
-              </div>
-            </div>
-          </div>
-        </section>
         </div>
 
-        <button id="create-note-fab" class="fab hidden" type="button">+</button>
+        <div id="dashboard-home" class="screen">
+          <div class="dashboard-home-layout">
+            <div class="dashboard-home-main">
+              <section class="welcome-card"><h2 id="welcome-title">Kh&#244;ng gian vi&#7871;t d&#224;nh cho b&#7841;n</h2><p id="welcome-text">NIKKI gi&#250;p b&#7841;n gi&#7919; nh&#7883;p vi&#7871;t ri&#234;ng t&#432; g&#7885;n g&#224;ng h&#417;n.</p><div class="welcome-actions"><button id="welcome-open-notes" class="primary-btn" data-screen="notes" type="button">M&#7903; khu nh&#7853;t k&#253;</button><button id="welcome-open-shares" class="secondary-btn" data-screen="shared-notes" type="button">Xem chia s&#7867;</button></div></section>
+              <section class="summary-grid">
+                <div class="summary-card"><span id="summary-active-label">Nh&#7853;t k&#253; &#273;ang ho&#7841;t &#273;&#7897;ng</span><strong id="active-count">0</strong></div>
+                <div class="summary-card"><span id="summary-trash-label">Trong th&#249;ng r&#225;c</span><strong id="trash-count">0</strong></div>
+                <div class="summary-card"><span id="summary-key-label">Tr&#7841;ng th&#225;i m&#7903; kh&#243;a</span><strong id="key-status">&#272;&#227; kh&#243;a</strong></div>
+              </section>
+              <section class="activity-card"><h3 id="activity-title">Nh&#7883;p l&#224;m vi&#7879;c</h3><p id="activity-text">Theo d&#245;i vi&#7871;t, kh&#244;i ph&#7909;c v&#224; chia s&#7867; g&#7885;n h&#417;n.</p><div class="activity-list"><div class="activity-item"><span class="activity-dot"></span><div><strong id="activity-item-1-title">T&#7841;o ho&#7863;c m&#7903; note nhanh</strong><span id="activity-item-1-text">V&#224;o khu nh&#7853;t k&#253; &#273;&#7875; vi&#7871;t, s&#7917;a v&#224; l&#432;u.</span></div></div><div class="activity-item"><span class="activity-dot"></span><div><strong id="activity-item-2-title">Qu&#7843;n l&#253; chia s&#7867;</strong><span id="activity-item-2-text">Xem note nh&#7853;n t&#7915; ng&#432;&#7901;i kh&#225;c v&#224; nh&#7919;ng g&#236; b&#7841;n &#273;&#227; g&#7917;i.</span></div></div><div class="activity-item"><span class="activity-dot"></span><div><strong id="activity-item-3-title">Theo d&#245;i b&#7843;o m&#7853;t</strong><span id="activity-item-3-text">Tr&#7841;ng th&#225;i m&#7903; kh&#243;a v&#224; d&#7919; li&#7879;u t&#225;ch r&#245;.</span></div></div></div></section>
+            </div>
+            <div class="dashboard-home-side">
+              <section class="status-card"><h3 id="quick-hints-title">G&#7907;i &#253; nhanh</h3><p id="quick-hints-text">Lu&#7891;ng b&#7855;t &#273;&#7847;u nhanh nh&#7845;t.</p><ul><li id="quick-hint-1">M&#7903; khu nh&#7853;t k&#253; &#273;&#7875; t&#7841;o ghi ch&#250; m&#7899;i.</li><li id="quick-hint-2">Nh&#7845;n m&#7903; kh&#243;a khi c&#7847;n xem n&#7897;i dung g&#7889;c.</li><li id="quick-hint-3">D&#249;ng khu chia s&#7867; khi mu&#7889;n g&#7917;i note cho ng&#432;&#7901;i kh&#225;c.</li></ul></section>
+              <section class="quick-card"><h3 id="security-card-title">B&#7843;o m&#7853;t c&#225; nh&#226;n</h3><p id="security-card-text">C&#7853;p nh&#7853;t hi&#7875;n th&#7883;, kh&#243;a c&#225; nh&#226;n ho&#7863;c m&#7853;t kh&#7849;u khi c&#7847;n.</p></section>
+            </div>
+          </div>
+        </div>
+
+        <div id="notes" class="screen hidden"><div class="editor-card"><div class="toolbar"><input id="note-search" type="text" placeholder="T&#236;m theo ti&#234;u &#273;&#7873;..." /><button id="unlock-notes" class="secondary-btn" type="button">M&#7903; kh&#243;a nh&#7853;t k&#253;</button></div><p id="notes-security-hint" class="security-hint"></p><div id="notes-list" class="notes-list note-card-grid"></div></div></div>
+        <div id="shared-notes" class="screen hidden"><div class="shared-grid"><section class="shared-column panel-shell"><div class="shared-heading"><h3 id="shared-with-title">Ng&#432;&#7901;i kh&#225;c chia s&#7867; cho t&#244;i</h3><p id="shared-with-text">Xem, ch&#7881;nh s&#7917;a ho&#7863;c &#7849;n nh&#7919;ng ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p></div><div id="shared-with-me-list" class="notes-list"></div></section><section class="shared-column panel-shell"><div class="shared-heading"><h3 id="shared-by-title">T&#244;i &#273;&#227; chia s&#7867;</h3><p id="shared-by-text">Qu&#7843;n l&#253; quy&#7873;n xem, quy&#7873;n s&#7917;a v&#224; link chia s&#7867;.</p></div><div id="shared-by-me-list" class="notes-list"></div></section></div></div>
+        <div id="trash" class="screen hidden"><h3 id="trash-title">Th&#249;ng r&#225;c 30 ng&#224;y</h3><p id="trash-text">N&#7897;i dung trong th&#249;ng r&#225;c v&#7851;n &#273;&#432;&#7907;c gi&#7919; m&#227; h&#243;a.</p><div id="trash-list" class="notes-list trash-list"></div></div>
+        <div id="calendar" class="screen hidden"><section class="calendar-card calendar-screen-card"><div class="calendar-head"><div><h3 id="calendar-title">L&#7883;ch theo th&#225;ng</h3><p id="calendar-text">Xem tr&#7885;n m&#7897;t th&#225;ng v&#224; ch&#7885;n nhanh th&#225;ng c&#7847;n xem.</p></div><div class="calendar-nav"><button id="calendar-open-picker" class="nav-pill-btn" type="button">Ch&#7885;n l&#7883;ch</button><button id="calendar-prev" class="secondary-btn" type="button">&#8249;</button><select id="calendar-month-inline" class="calendar-month-picker"></select><select id="calendar-year-inline" class="calendar-month-picker calendar-year-picker"></select><button id="calendar-next" class="secondary-btn" type="button">&#8250;</button></div></div><div id="calendar-month-label" class="calendar-month-label"></div><div class="calendar-main-grid"><div><div class="calendar-weekdays"><span id="calendar-weekday-1">T2</span><span id="calendar-weekday-2">T3</span><span id="calendar-weekday-3">T4</span><span id="calendar-weekday-4">T5</span><span id="calendar-weekday-5">T6</span><span id="calendar-weekday-6">T7</span><span id="calendar-weekday-7">CN</span></div><div id="calendar-grid" class="calendar-grid"></div></div><aside class="calendar-agenda-panel"><div class="calendar-agenda-head"><div><h4 id="calendar-agenda-title">Nhắc hẹn trong tháng</h4><p id="calendar-agenda-text">Hiện 5 nhắc hẹn gần đến nhất trong tháng này.</p></div><button id="calendar-agenda-toggle" class="text-btn" type="button">Xem thêm</button></div><div id="calendar-agenda-list" class="calendar-agenda-list"></div></aside></div><div class="calendar-lower-grid"><div class="calendar-note-panel"><div class="calendar-note-head"><div><h4 id="calendar-selected-date">--</h4><p id="calendar-reminder-text">Nhập nhắc nhở cho ngày bạn chọn.</p></div></div><textarea id="calendar-note-input" rows="4" placeholder="Nhắc mình điều gì vào ngày này?"></textarea><div class="editor-actions"><button id="calendar-save-note" class="primary-btn" type="button">L&#432;u nh&#7855;c nh&#7903;</button><button id="calendar-clear-note" class="secondary-btn" type="button">X&#243;a nh&#7855;c nh&#7903;</button></div></div></div></section></div>
+        <div id="profile" class="screen hidden"><div class="profile-grid"><div class="field"><label id="profile-display-name-label">T&#234;n hi&#7875;n th&#7883;</label><input id="profile-display-name" type="text" /></div><div class="field"><label id="profile-username-label">T&#234;n ng&#432;&#7901;i d&#249;ng</label><input id="profile-username" type="text" readonly /></div><div class="field"><label id="profile-birth-date-label">Ng&#224;y sinh</label><input id="profile-birth-date" type="date" /></div><div class="field"><label id="profile-email-label">Email</label><input id="profile-email" type="email" readonly /></div><div class="field"><label id="profile-gender-label">Gi&#7899;i t&#237;nh</label><select id="profile-gender"><option id="profile-gender-option-empty" value="">Ch&#7885;n</option><option id="profile-gender-option-male" value="Nam">Nam</option><option id="profile-gender-option-female" value="N&#7919;">N&#7919;</option><option id="profile-gender-option-other" value="Kh&#225;c">Kh&#225;c</option></select></div></div><div class="editor-actions"><button id="save-profile" class="primary-btn" type="button">L&#432;u th&#244;ng tin</button><button id="open-security-panel" class="secondary-btn" type="button">Qu&#7843;n l&#253; b&#7843;o m&#7853;t</button></div></div>
+        <div id="share-view" class="screen hidden"><div class="shared-note-shell panel-shell"><div class="shared-note-head"><div><h3 id="shared-note-title">Shared note</h3><p id="shared-note-key">Nh&#7853;p kh&#243;a ki&#7875;m th&#7917; &#273;&#7875; m&#7903; ghi ch&#250; &#273;&#432;&#7907;c chia s&#7867;.</p></div><div class="shared-note-actions"><button id="shared-view-close" class="text-btn hidden" type="button">&#10005;</button><button id="shared-note-unlock" class="secondary-btn" type="button">M&#7903; ghi ch&#250;</button><button id="shared-note-save" class="primary-btn hidden" type="button">L&#432;u thay &#273;&#7893;i</button></div></div><div id="shared-toolbar" class="editor-toolbar shared-toolbar hidden"><button data-command="bold" type="button"><b>B</b></button><button data-command="italic" type="button"><i>I</i></button><button data-command="underline" type="button"><u>U</u></button><button id="shared-align-left" data-command="justifyLeft" type="button">Tr&#225;i</button><button id="shared-align-center" data-command="justifyCenter" type="button">Gi&#7919;a</button><button id="shared-align-right" data-command="justifyRight" type="button">Ph&#7843;i</button><label class="toolbar-select-label"><span id="shared-font-size-label">K&#237;ch th&#432;&#7901;c</span><select id="shared-font-size-select"><option id="shared-font-size-option-empty" value="">Ch&#7885;n</option><option value="1">10</option><option value="2">12</option><option value="3">14</option><option value="4">18</option><option value="5">24</option><option value="6">28</option><option value="7">32</option></select></label><label class="toolbar-select-label"><span id="shared-font-family-label">Font</span><select id="shared-font-family-select"><option id="shared-font-family-option-empty" value="">Be Vietnam Pro</option><option value="Be Vietnam Pro">Be Vietnam Pro</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Times New Roman">Times New Roman</option></select></label><label class="toolbar-select-label"><span id="shared-font-color-label">M&#224;u ch&#7911;</span><input id="shared-font-color" type="color" /></label><label class="toolbar-select-label"><span id="shared-highlight-label">Highlighter</span><input id="shared-highlight-color" type="color" /></label><button id="shared-clear-format" type="button">X&#243;a</button></div><div id="share-auth-gate" class="share-auth-gate hidden"><div class="share-auth-copy"><h4 id="share-auth-title">Sign in to continue</h4><p id="share-auth-text">This public-key share needs the recipient account in this browser so the note can be decrypted with the correct private key.</p></div><div class="share-auth-form"><div class="field"><label id="share-login-identifier-label">Email / Username</label><input id="share-login-identifier" type="text" placeholder="you@example.com" /></div><div class="field"><label id="share-login-password-label">Password</label><input id="share-login-password" type="password" placeholder="********" /></div><div class="editor-actions"><button id="share-login-submit" class="primary-btn" type="button">Login and open</button></div></div></div><div class="field"><label id="shared-access-key-label">Kh&#243;a ki&#7875;m th&#7917;</label><div class="share-row"><input id="shared-note-access-key" type="password" placeholder="Nh&#7853;p kh&#243;a &#273;&#432;&#7907;c ng&#432;&#7901;i g&#7917;i cung c&#7845;p." /></div></div><div class="field"><label id="shared-title-label">Ti&#234;u &#273;&#7873;</label><input id="shared-note-title-input" type="text" readonly /></div><div class="field"><label id="shared-content-label">N&#7897;i dung</label><div id="shared-note-editor" class="editor" contenteditable="false"></div></div></div></div>
       </section>
-    </main>
+      <button id="create-note-fab" class="fab hidden" type="button">+</button>
+    </section>
+  </main>
 
-    <div id="note-modal" class="modal-overlay hidden">
-      <div class="modal-card modal-card-wide note-modal-card">
-        <div class="shared-note-head">
-          <div>
-            <h3>So&#7841;n nh&#7853;t k&#253;</h3>
-            <p>M&#7903;, t&#7841;o m&#7899;i ho&#7863;c ch&#7881;nh s&#7917;a ghi ch&#250; trong m&#7897;t popup g&#7885;n g&#224;ng.</p>
-          </div>
-          <div class="shared-note-actions">
-            <button id="note-modal-close" class="text-btn" type="button">&#272;&#243;ng</button>
-          </div>
-        </div>
-        <div class="field"><label>Ti&#234;u &#273;&#7873;</label><input id="note-title" type="text" /></div>
-        <div class="editor-toolbar">
-          <button data-command="bold" type="button"><b>B</b></button>
-          <button data-command="italic" type="button"><i>I</i></button>
-          <button data-command="underline" type="button"><u>U</u></button>
-          <button data-command="justifyLeft" type="button">Tr&#225;i</button>
-          <button data-command="justifyCenter" type="button">Gi&#7919;a</button>
-          <button data-command="justifyRight" type="button">Ph&#7843;i</button>
-
-          <label class="toolbar-select-label">
-            <span>K&#237;ch th&#432;&#7901;c</span>
-            <select id="font-size-select">
-              <option value="">Ch&#7885;n</option>
-              <option value="1">10</option>
-              <option value="2">12</option>
-              <option value="3">14</option>
-              <option value="4">18</option>
-              <option value="5">24</option>
-              <option value="6">28</option>
-              <option value="7">32</option>
-            </select>
-          </label>
-
-          <label class="toolbar-select-label">
-            <span>Font</span>
-            <select id="font-family-select">
-              <option value="">M&#7841;c &#273;&#7883;nh</option>
-              <option value="Arial">Arial</option>
-              <option value="Calibri">Calibri</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Verdana">Verdana</option>
-            </select>
-          </label>
-
-          <label class="toolbar-select-label">
-            <span>M&#224;u ch&#7911;</span>
-            <input id="font-color" type="color" title="Ch&#7885;n m&#224;u ch&#7911;" />
-          </label>
-
-          <label class="toolbar-select-label">
-            <span>Highlighter</span>
-            <input id="highlight-color" type="color" title="Đánh dấu chữ" />
-          </label>
-
-          <button id="clear-format" type="button" title="X&#243;a &#273;&#7889;nh d&#7841;ng">X&#243;a</button>
-          <button id="download-word" class="secondary-btn" type="button">T&#7843;i Word</button>
-        </div>
-        <div class="field"><label>Ti&#234;u &#273;&#7873;</label><input id="note-title" type="text" /></div>
-        <div id="note-editor" class="editor" contenteditable="true"></div>
-        <div class="editor-actions">
-          <button id="save-note" class="primary-btn" type="button">L&#432;u nh&#7853;t k&#253;</button>
-          <button id="share-note" class="secondary-btn" type="button">Chia s&#7867;</button>
-        </div>
-        <div id="share-link-panel" class="share-panel hidden">
-          <div class="field">
-            <label>Quy&#7873;n chia s&#7867;</label>
-            <select id="share-access-mode">
-              <option value="view">Ch&#7881; xem</option>
-              <option value="edit">Cho ch&#7881;nh s&#7917;a</option>
-            </select>
-          </div>
-          <div id="share-recipient-field" class="field hidden">
-            <label>T&#224;i kho&#7843;n ng&#432;&#7901;i nh&#7853;n</label>
-            <input id="share-recipient" type="text" placeholder="Email ho&#7863;c t&#234;n ng&#432;&#7901;i d&#249;ng" />
-          </div>
-          <div class="field">
-            <label>Link chia s&#7867;</label>
-            <div class="share-row">
-              <input id="share-link-output" type="text" readonly />
-              <button id="copy-share-link" class="secondary-btn" type="button">Sao ch&#233;p</button>
-            </div>
-          </div>
-          <p id="share-status" class="security-hint">M&#7895;i l&#7847;n chia s&#7867; c&#7847;n d&#249;ng m&#7897;t kh&#243;a ki&#7875;m th&#7917; m&#7899;i.</p>
-        </div>
-      </div>
-    </div>
-
-    <div id="calendar-controls-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>Chọn tháng</h3>
-        <div class="field">
-          <label>Năm</label>
-          <select id="calendar-year-select"></select>
-        </div>
-        <div class="field">
-          <label>Tháng</label>
-          <select id="calendar-month-select">
-            <option value="0">Tháng 1</option>
-            <option value="1">Tháng 2</option>
-            <option value="2">Tháng 3</option>
-            <option value="3">Tháng 4</option>
-            <option value="4">Tháng 5</option>
-            <option value="5">Tháng 6</option>
-            <option value="6">Tháng 7</option>
-            <option value="7">Tháng 8</option>
-            <option value="8">Tháng 9</option>
-            <option value="9">Tháng 10</option>
-            <option value="10">Tháng 11</option>
-            <option value="11">Tháng 12</option>
-          </select>
-        </div>
-        <div class="modal-actions">
-          <button id="calendar-controls-close" class="text-btn" type="button">Đóng</button>
-          <button id="calendar-controls-apply" class="primary-btn" type="button">Áp dụng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="profile-access-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>M&#7903; th&#244;ng tin c&#225; nh&#226;n</h3>
-        <p>Nh&#7853;p kh&#243;a nh&#7853;t k&#253; &#273;&#7875; xem h&#7891; s&#417;. N&#7871;u ch&#432;a &#273;&#7893;i kh&#243;a, m&#7863;c &#273;&#7883;nh kh&#243;a nh&#7853;t k&#253; l&#224; m&#7853;t kh&#7849;u t&#224;i kho&#7843;n l&#250;c t&#7841;o.</p>
-        <div class="field">
-          <label>Kh&#243;a nh&#7853;t k&#253;</label>
-          <input id="profile-access-key" type="password" placeholder="Nh&#7853;p kh&#243;a nh&#7853;t k&#253;" />
-        </div>
-        <div class="modal-actions">
-          <button id="profile-access-submit" class="primary-btn" type="button">M&#7903; h&#7891; s&#417;</button>
-          <button id="profile-access-forgot" class="secondary-btn" type="button">Qu&#234;n m&#7853;t kh&#7849;u</button>
-          <button id="profile-access-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="profile-otp-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>X&#225;c th&#7921;c OTP h&#7891; s&#417;</h3>
-        <p>Nh&#7853;p OTP &#273;&#227; g&#7917;i v&#7873; email &#273;&#7875; m&#7903; h&#7891; s&#417; c&#225; nh&#226;n.</p>
-        <div class="field">
-          <label>OTP</label>
-          <input id="profile-access-otp" type="text" maxlength="6" placeholder="Nh&#7853;p m&#227; OTP" />
-        </div>
-        <div class="modal-actions">
-          <button id="profile-otp-submit" class="primary-btn" type="button">X&#225;c nh&#7853;n</button>
-          <button id="profile-otp-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="recovery-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>C&#7845;p l&#7841;i kh&#243;a</h3>
-        <p>Nh&#7853;p OTP &#273;&#227; g&#7917;i v&#7873; email v&#224; m&#7853;t kh&#7849;u m&#7899;i &#273;&#7875; c&#7845;p l&#7841;i kh&#243;a nh&#7853;t k&#253;.</p>
-        <div class="field">
-          <label>OTP</label>
-          <input id="recovery-otp" type="text" maxlength="6" placeholder="Nh&#7853;p m&#227; OTP" />
-        </div>
-        <div class="field">
-          <label>M&#7853;t kh&#7849;u m&#7899;i</label>
-          <input id="recovery-new-password" type="password" placeholder="Nh&#7853;p m&#7853;t kh&#7849;u m&#7899;i" />
-        </div>
-        <div class="modal-actions">
-          <button id="recovery-submit" class="primary-btn" type="button">X&#225;c nh&#7853;n</button>
-          <button id="recovery-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="security-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>Qu&#7843;n l&#253; b&#7843;o m&#7853;t</h3>
-        <p>Ch&#7885;n thao t&#225;c b&#7841;n mu&#7889;n th&#7921;c hi&#7879;n.</p>
-        <div class="security-options">
-          <button id="security-option-password" class="security-option-card" type="button">
-            <strong>&#272;&#7893;i m&#7853;t kh&#7849;u</strong>
-            <span>C&#7853;p nh&#7853;t m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p v&#7899;i OTP x&#225;c nh&#7853;n.</span>
-          </button>
-          <button id="security-option-key" class="security-option-card" type="button">
-            <strong>&#272;&#7893;i kh&#243;a nh&#7853;t k&#253;</strong>
-            <span>Thay kh&#243;a gi&#7843;i m&#227; ghi ch&#250; v&#224; gi&#7919; d&#7919; li&#7879;u an to&#224;n.</span>
-          </button>
-          <button id="security-option-delete" class="security-option-card danger" type="button">
-            <strong>X&#243;a t&#224;i kho&#7843;n</strong>
-            <span>&#272;&#432;a t&#224;i kho&#7843;n v&#224;o th&#249;ng r&#225;c 30 ng&#224;y tr&#432;&#7899;c khi x&#243;a h&#7859;n.</span>
-          </button>
-        </div>
-        <div class="modal-actions">
-          <button id="security-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="security-password-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>&#272;&#7893;i m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p</h3>
-        <div class="field">
-          <label>M&#7853;t kh&#7849;u hi&#7879;n t&#7841;i</label>
-          <input id="security-current-password" type="password" />
-        </div>
-        <div class="field">
-          <label>M&#7853;t kh&#7849;u m&#7899;i</label>
-          <input id="security-new-password" type="password" />
-        </div>
-        <div class="field">
-          <label>OTP x&#225;c nh&#7853;n</label>
-          <input id="security-password-otp" type="text" maxlength="6" />
-        </div>
-        <div class="modal-actions">
-          <button id="security-password-request" class="secondary-btn" type="button">G&#7917;i OTP</button>
-          <button id="security-password-confirm" class="primary-btn" type="button">&#272;&#7893;i m&#7853;t kh&#7849;u</button>
-          <button id="security-password-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="personal-key-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>&#272;&#7893;i kh&#243;a nh&#7853;t k&#253;</h3>
-        <div class="field">
-          <label>Kh&#243;a nh&#7853;t k&#253; hi&#7879;n t&#7841;i</label>
-          <input id="profile-current-personal-key" type="password" />
-        </div>
-        <div class="field">
-          <label>Kh&#243;a nh&#7853;t k&#253; m&#7899;i</label>
-          <input id="profile-new-personal-key" type="password" />
-        </div>
-        <div class="field">
-          <label>OTP x&#225;c nh&#7853;n</label>
-          <input id="profile-personal-key-otp" type="text" maxlength="6" />
-        </div>
-        <div class="modal-actions">
-          <button id="request-personal-key-otp" class="secondary-btn" type="button">G&#7917;i OTP</button>
-          <button id="confirm-personal-key" class="primary-btn" type="button">&#272;&#7893;i kh&#243;a nh&#7853;t k&#253;</button>
-          <button id="personal-key-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="delete-account-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>X&#243;a t&#224;i kho&#7843;n</h3>
-        <div class="field">
-          <label>M&#7853;t kh&#7849;u hi&#7879;n t&#7841;i</label>
-          <input id="delete-account-password" type="password" />
-        </div>
-        <div class="field">
-          <label>Kh&#243;a nh&#7853;t k&#253; hi&#7879;n t&#7841;i</label>
-          <input id="delete-account-personal-key" type="password" />
-        </div>
-        <div class="field">
-          <label>OTP x&#225;c nh&#7853;n</label>
-          <input id="delete-account-otp" type="text" maxlength="6" />
-        </div>
-        <div class="modal-actions">
-          <button id="delete-account-request" class="secondary-btn" type="button">G&#7917;i OTP</button>
-          <button id="delete-account-confirm" class="primary-btn" type="button">X&#243;a t&#224;i kho&#7843;n</button>
-          <button id="delete-account-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="notes-unlock-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>M&#7903; kh&#243;a nh&#7853;t k&#253;</h3>
-        <p>Nh&#7853;p kh&#243;a nh&#7853;t k&#253; &#273;&#7875; &#273;&#7885;c v&#224; ch&#7881;nh s&#7917;a nh&#7853;t k&#253;.</p>
-        <div class="field">
-          <label>Kh&#243;a nh&#7853;t k&#253;</label>
-          <input id="notes-unlock-key" type="password" placeholder="Nh&#7853;p kh&#243;a nh&#7853;t k&#253;" />
-        </div>
-        <div class="modal-actions">
-          <button id="notes-unlock-confirm" class="primary-btn" type="button">M&#7903; kh&#243;a</button>
-          <button id="notes-unlock-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="share-key-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>T&#7841;o link chia s&#7867;</h3>
-        <p>Ch&#7885;n c&#225;ch chia s&#7867; an to&#224;n cho ghi ch&#250; n&#224;y.</p>
-        <div class="field">
-          <label>Ki&#7875;u m&#227; h&#243;a</label>
-          <select id="share-encryption-type">
-            <option value="symmetric">Symmetric Encryption (Password)</option>
-            <option value="public-key">Public-Key Encryption (Secure Share)</option>
-          </select>
-        </div>
-        <div id="share-symmetric-field" class="field">
-          <label>M&#7853;t kh&#7849;u chia s&#7867;</label>
-          <input id="share-test-key" type="password" placeholder="Nh&#7853;p m&#7853;t kh&#7849;u cho ng&#432;&#7901;i nh&#7853;n" />
-        </div>
-        <div id="share-public-key-field" class="field hidden">
-          <label>Ng&#432;&#7901;i nh&#7853;n</label>
-          <input id="share-recipient-input" type="text" placeholder="Nh&#7853;p username ho&#7863;c email ng&#432;&#7901;i nh&#7853;n" />
-        </div>
-        <div class="modal-actions">
-          <button id="share-key-confirm" class="primary-btn" type="button">T&#7841;o link</button>
-          <button id="share-key-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="delete-account-confirm-modal" class="modal-overlay hidden">
-      <div class="modal-card">
-        <h3>X&#225;c nh&#7853;n x&#243;a t&#224;i kho&#7843;n</h3>
-        <p>B&#7841;n c&#243; ch&#7855;c mu&#7889;n x&#243;a v&#297;nh vi&#7877;n t&#224;i kho&#7843;n n&#224;y kh&#244;ng? T&#224;i kho&#7843;n s&#7869; v&#224;o th&#249;ng r&#225;c 30 ng&#224;y v&#224; s&#7869; b&#7883; x&#243;a h&#7859;n n&#7871;u b&#7841;n kh&#244;ng &#273;&#259;ng nh&#7853;p l&#7841;i.</p>
-        <div class="modal-actions">
-          <button id="delete-account-final-confirm" class="primary-btn" type="button">T&#244;i ch&#7855;c ch&#7855;n</button>
-          <button id="delete-account-final-close" class="text-btn" type="button">&#272;&#243;ng</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="toast" class="toast hidden"></div>
-    <script src="./nikki-security.js"></script>
-    <script src="./app.js"></script>
-  </body>
+  <div id="note-modal" class="modal-overlay hidden"><div class="modal-card modal-card-wide note-modal-card"><div class="shared-note-head"><div><h3>So&#7841;n nh&#7853;t k&#253;</h3><p>M&#7903;, t&#7841;o m&#7899;i ho&#7863;c ch&#7881;nh s&#7917;a ghi ch&#250; trong popup.</p></div><div class="shared-note-actions"><button id="note-modal-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div><div class="field"><label>Ti&#234;u &#273;&#7873;</label><input id="note-title" type="text" /></div><div class="editor-toolbar"><button data-command="bold" type="button"><b>B</b></button><button data-command="italic" type="button"><i>I</i></button><button data-command="underline" type="button"><u>U</u></button><button data-command="justifyLeft" type="button">Tr&#225;i</button><button data-command="justifyCenter" type="button">Gi&#7919;a</button><button data-command="justifyRight" type="button">Ph&#7843;i</button><label class="toolbar-select-label"><span>K&#237;ch th&#432;&#7901;c</span><select id="font-size-select"><option value="">Ch&#7885;n</option><option value="1">10</option><option value="2">12</option><option value="3">14</option><option value="4">18</option><option value="5">24</option><option value="6">28</option><option value="7">32</option></select></label><label class="toolbar-select-label"><span>Font</span><select id="font-family-select"><option value="">Be Vietnam Pro</option><option value="Be Vietnam Pro">Be Vietnam Pro</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Times New Roman">Times New Roman</option></select></label><div id="note-color-palette" class="palette-group"><span>M&#224;u ch&#7911;</span><button class="palette-btn" type="button" data-color="#111827" style="background:#111827"></button><button class="palette-btn" type="button" data-color="#dc2626" style="background:#dc2626"></button><button class="palette-btn" type="button" data-color="#ea580c" style="background:#ea580c"></button><button class="palette-btn" type="button" data-color="#ca8a04" style="background:#ca8a04"></button><button class="palette-btn" type="button" data-color="#16a34a" style="background:#16a34a"></button><button class="palette-btn" type="button" data-color="#2563eb" style="background:#2563eb"></button><button class="palette-btn" type="button" data-color="#7c3aed" style="background:#7c3aed"></button><button id="font-color-advanced-toggle" class="text-btn toolbar-advanced-btn" type="button">N&#226;ng cao</button><input id="font-color" class="hidden" type="color" /></div><div id="note-highlight-palette" class="palette-group"><span>T&#244; n&#7873;n</span><button class="palette-btn" type="button" data-color="#fef3c7" style="background:#fef3c7"></button><button class="palette-btn" type="button" data-color="#fecaca" style="background:#fecaca"></button><button class="palette-btn" type="button" data-color="#fed7aa" style="background:#fed7aa"></button><button class="palette-btn" type="button" data-color="#fde68a" style="background:#fde68a"></button><button class="palette-btn" type="button" data-color="#bbf7d0" style="background:#bbf7d0"></button><button class="palette-btn" type="button" data-color="#bfdbfe" style="background:#bfdbfe"></button><button class="palette-btn" type="button" data-color="#ddd6fe" style="background:#ddd6fe"></button><button id="highlight-color-advanced-toggle" class="text-btn toolbar-advanced-btn" type="button">N&#226;ng cao</button><input id="highlight-color" class="hidden" type="color" /></div><button id="clear-format" type="button">X&#243;a</button><button id="download-word" class="secondary-btn" type="button">T&#7843;i Word</button></div><div id="note-editor" class="editor" contenteditable="true"></div><div class="editor-actions"><button id="save-note" class="primary-btn" type="button">L&#432;u nh&#7853;t k&#253;</button><button id="share-note" class="secondary-btn" type="button">Chia s&#7867;</button></div><div id="share-link-panel" class="share-panel hidden"><div class="field"><label>Quy&#7873;n chia s&#7867;</label><select id="share-access-mode"><option value="view">Ch&#7881; xem</option><option value="edit">Cho ch&#7881;nh s&#7917;a</option></select></div><div id="share-recipient-field" class="field hidden"><label>T&#224;i kho&#7843;n ng&#432;&#7901;i nh&#7853;n</label><input id="share-recipient" type="text" placeholder="Email ho&#7863;c t&#234;n ng&#432;&#7901;i d&#249;ng" /></div><div class="field"><label>Link chia s&#7867;</label><div class="share-row"><input id="share-link-output" type="text" readonly /><button id="copy-share-link" class="secondary-btn" type="button">Sao ch&#233;p</button></div></div><p id="share-status" class="security-hint">M&#7895;i l&#7847;n chia s&#7867; c&#7847;n d&#249;ng m&#7897;t kh&#243;a ki&#7875;m th&#7917; m&#7899;i.</p></div></div></div>
+  <div id="calendar-controls-modal" class="modal-overlay hidden"><div class="modal-card"><h3>Ch&#7885;n th&#225;ng</h3><div class="field"><label>N&#259;m</label><select id="calendar-year-select"></select></div><div class="field"><label>Th&#225;ng</label><select id="calendar-month-select"><option value="0">Th&#225;ng 1</option><option value="1">Th&#225;ng 2</option><option value="2">Th&#225;ng 3</option><option value="3">Th&#225;ng 4</option><option value="4">Th&#225;ng 5</option><option value="5">Th&#225;ng 6</option><option value="6">Th&#225;ng 7</option><option value="7">Th&#225;ng 8</option><option value="8">Th&#225;ng 9</option><option value="9">Th&#225;ng 10</option><option value="10">Th&#225;ng 11</option><option value="11">Th&#225;ng 12</option></select></div><div class="modal-actions"><button id="calendar-controls-close" class="text-btn" type="button">&#272;&#243;ng</button><button id="calendar-controls-apply" class="primary-btn" type="button">&#193;p d&#7909;ng</button></div></div></div>
+  <div id="profile-access-modal" class="modal-overlay hidden"><div class="modal-card"><h3>M&#7903; th&#244;ng tin c&#225; nh&#226;n</h3><p>Nh&#7853;p kh&#243;a nh&#7853;t k&#253; &#273;&#7875; xem h&#7891; s&#417;.</p><div class="field"><label>Kh&#243;a nh&#7853;t k&#253;</label><input id="profile-access-key" type="password" placeholder="Nh&#7853;p kh&#243;a nh&#7853;t k&#253;" /></div><div class="modal-actions"><button id="profile-access-submit" class="primary-btn" type="button">M&#7903; h&#7891; s&#417;</button><button id="profile-access-forgot" class="secondary-btn" type="button">Qu&#234;n m&#7853;t kh&#7849;u</button><button id="profile-access-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="profile-otp-modal" class="modal-overlay hidden"><div class="modal-card"><h3>X&#225;c th&#7921;c OTP h&#7891; s&#417;</h3><p>Nh&#7853;p OTP &#273;&#227; g&#7917;i v&#7873; email.</p><div class="field"><label>OTP</label><input id="profile-access-otp" type="text" maxlength="6" placeholder="Nh&#7853;p m&#227; OTP" /></div><div class="modal-actions"><button id="profile-otp-submit" class="primary-btn" type="button">X&#225;c nh&#7853;n</button><button id="profile-otp-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="recovery-modal" class="modal-overlay hidden"><div class="modal-card"><h3>C&#7845;p l&#7841;i kh&#243;a</h3><div class="field"><label>OTP</label><input id="recovery-otp" type="text" maxlength="6" /></div><div class="field"><label>M&#7853;t kh&#7849;u m&#7899;i</label><input id="recovery-new-password" type="password" /></div><div class="modal-actions"><button id="recovery-submit" class="primary-btn" type="button">X&#225;c nh&#7853;n</button><button id="recovery-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="security-modal" class="modal-overlay hidden"><div class="modal-card"><h3>Qu&#7843;n l&#253; b&#7843;o m&#7853;t</h3><p>Ch&#7885;n thao t&#225;c b&#7841;n mu&#7889;n th&#7921;c hi&#7879;n.</p><div class="field"><label>RSA status</label><input id="rsa-key-status" type="text" readonly /></div><div class="field"><label>Public key</label><textarea id="security-public-key" rows="3" readonly></textarea></div><div class="field"><label>Private key</label><textarea id="security-private-key" rows="4" readonly></textarea></div><div class="modal-actions"><button id="show-private-key" class="secondary-btn" type="button">Show Private Key</button><button id="copy-private-key" class="secondary-btn" type="button">Copy Private Key</button><button id="download-private-key" class="secondary-btn" type="button">Download Private Key</button><button id="regenerate-key-pair" class="secondary-btn" type="button">Regenerate Key Pair</button></div><div class="security-options"><button id="security-option-password" class="security-option-card" type="button"><strong>&#272;&#7893;i m&#7853;t kh&#7849;u</strong><span>C&#7853;p nh&#7853;t m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p.</span></button><button id="security-option-key" class="security-option-card" type="button"><strong>&#272;&#7893;i kh&#243;a nh&#7853;t k&#253;</strong><span>Thay kh&#243;a gi&#7843;i m&#227; ghi ch&#250;.</span></button><button id="security-option-delete" class="security-option-card danger" type="button"><strong>X&#243;a t&#224;i kho&#7843;n</strong><span>&#272;&#432;a t&#224;i kho&#7843;n v&#224;o th&#249;ng r&#225;c 30 ng&#224;y.</span></button></div><div class="modal-actions"><button id="security-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="security-password-modal" class="modal-overlay hidden"><div class="modal-card"><h3>&#272;&#7893;i m&#7853;t kh&#7849;u &#273;&#259;ng nh&#7853;p</h3><div class="field"><label>M&#7853;t kh&#7849;u hi&#7879;n t&#7841;i</label><input id="security-current-password" type="password" /></div><div class="field"><label>M&#7853;t kh&#7849;u m&#7899;i</label><input id="security-new-password" type="password" /></div><div class="field"><label>OTP x&#225;c nh&#7853;n</label><input id="security-password-otp" type="text" maxlength="6" /></div><div class="modal-actions"><button id="security-password-request" class="secondary-btn" type="button">G&#7917;i OTP</button><button id="security-password-confirm" class="primary-btn" type="button">&#272;&#7893;i m&#7853;t kh&#7849;u</button><button id="security-password-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="personal-key-modal" class="modal-overlay hidden"><div class="modal-card"><h3>&#272;&#7893;i kh&#243;a nh&#7853;t k&#253;</h3><div class="field"><label>Kh&#243;a nh&#7853;t k&#253; hi&#7879;n t&#7841;i</label><input id="profile-current-personal-key" type="password" /></div><div class="field"><label>Kh&#243;a nh&#7853;t k&#253; m&#7899;i</label><input id="profile-new-personal-key" type="password" /></div><div class="field"><label>OTP x&#225;c nh&#7853;n</label><input id="profile-personal-key-otp" type="text" maxlength="6" /></div><div class="modal-actions"><button id="request-personal-key-otp" class="secondary-btn" type="button">G&#7917;i OTP</button><button id="confirm-personal-key" class="primary-btn" type="button">&#272;&#7893;i kh&#243;a nh&#7853;t k&#253;</button><button id="personal-key-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="delete-account-modal" class="modal-overlay hidden"><div class="modal-card"><h3>X&#243;a t&#224;i kho&#7843;n</h3><div class="field"><label>M&#7853;t kh&#7849;u hi&#7879;n t&#7841;i</label><input id="delete-account-password" type="password" /></div><div class="field"><label>Kh&#243;a nh&#7853;t k&#253; hi&#7879;n t&#7841;i</label><input id="delete-account-personal-key" type="password" /></div><div class="field"><label>OTP x&#225;c nh&#7853;n</label><input id="delete-account-otp" type="text" maxlength="6" /></div><div class="modal-actions"><button id="delete-account-request" class="secondary-btn" type="button">G&#7917;i OTP</button><button id="delete-account-confirm" class="primary-btn" type="button">X&#243;a t&#224;i kho&#7843;n</button><button id="delete-account-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="notes-unlock-modal" class="modal-overlay hidden"><div class="modal-card"><h3>M&#7903; kh&#243;a nh&#7853;t k&#253;</h3><p>Nh&#7853;p kh&#243;a nh&#7853;t k&#253; &#273;&#7875; &#273;&#7885;c v&#224; ch&#7881;nh s&#7917;a nh&#7853;t k&#253;.</p><div class="field"><label>Kh&#243;a nh&#7853;t k&#253;</label><input id="notes-unlock-key" type="password" placeholder="Nh&#7853;p kh&#243;a nh&#7853;t k&#253;" /></div><div class="modal-actions"><button id="notes-unlock-confirm" class="primary-btn" type="button">M&#7903; kh&#243;a</button><button id="notes-unlock-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="share-key-modal" class="modal-overlay hidden"><div class="modal-card"><h3>T&#7841;o link chia s&#7867;</h3><p>Ch&#7885;n c&#225;ch chia s&#7867; an to&#224;n cho ghi ch&#250; n&#224;y.</p><div class="field"><label>Ki&#7875;u m&#227; h&#243;a</label><select id="share-encryption-type"><option value="symmetric">Symmetric Encryption (Password)</option><option value="public-key">Public-Key Encryption (Secure Share)</option></select></div><div id="share-symmetric-field" class="field"><label>M&#7853;t kh&#7849;u chia s&#7867;</label><input id="share-test-key" type="password" placeholder="Nh&#7853;p m&#7853;t kh&#7849;u cho ng&#432;&#7901;i nh&#7853;n" /></div><div id="share-public-key-field" class="field hidden"><label>Ng&#432;&#7901;i nh&#7853;n</label><input id="share-recipient-input" type="text" placeholder="Nh&#7853;p username ho&#7863;c email ng&#432;&#7901;i nh&#7853;n" /></div><div class="modal-actions"><button id="share-key-confirm" class="primary-btn" type="button">T&#7841;o link</button><button id="share-key-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="delete-account-confirm-modal" class="modal-overlay hidden"><div class="modal-card"><h3>X&#225;c nh&#7853;n x&#243;a t&#224;i kho&#7843;n</h3><p>B&#7841;n c&#243; ch&#7855;c mu&#7889;n x&#243;a v&#297;nh vi&#7877;n t&#224;i kho&#7843;n n&#224;y kh&#244;ng?</p><div class="modal-actions"><button id="delete-account-final-confirm" class="primary-btn" type="button">T&#244;i ch&#7855;c ch&#7855;n</button><button id="delete-account-final-close" class="text-btn" type="button">&#272;&#243;ng</button></div></div></div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="./nikki-security.js"></script>
+  <script src="./app.js"></script>
+</body>
 </html>

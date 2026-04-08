@@ -6,6 +6,7 @@ const { encryptDiaryContent } = require("../../services/encryptionService");
 const { hashPassword, verifyPassword } = require("../utils/passwords");
 
 const PERSONAL_KEY_TEST_VALUE = "bloomnote-personal-key-ready";
+const USERNAME_PATTERN = /^[a-z0-9_]{4,32}$/;
 
 function createAuthRoutes({ admin, db }) {
   const router = express.Router();
@@ -30,10 +31,16 @@ function createAuthRoutes({ admin, db }) {
 
   router.post("/register", async (req, res) => {
     try {
-      const { username, email, password } = req.body;
+      const rawUsername = String(req.body?.username || "").trim().toLowerCase();
+      const email = String(req.body?.email || "").trim().toLowerCase();
+      const password = req.body?.password;
+      const username = rawUsername;
 
       if (!username || !email || !password) {
         return res.status(400).json({ message: "Username, email, and password are required." });
+      }
+      if (!USERNAME_PATTERN.test(username)) {
+        return res.status(400).json({ message: "Username must use 4-32 lowercase letters, numbers, or underscores only." });
       }
 
       const existingUsername = await db.collection("users").where("username", "==", username).limit(1).get();
@@ -154,14 +161,15 @@ function createAuthRoutes({ admin, db }) {
 
   router.post("/login", async (req, res) => {
     try {
-      const { identifier, password } = req.body;
+      const identifier = String(req.body?.identifier || "").trim();
+      const password = req.body?.password;
       if (!identifier || !password) {
         return res.status(400).json({ message: "Email/username and password are required." });
       }
 
-      let snapshot = await db.collection("users").where("email", "==", identifier).limit(1).get();
+      let snapshot = await db.collection("users").where("email", "==", identifier.toLowerCase()).limit(1).get();
       if (snapshot.empty) {
-        snapshot = await db.collection("users").where("username", "==", identifier).limit(1).get();
+        snapshot = await db.collection("users").where("username", "==", identifier.toLowerCase()).limit(1).get();
       }
 
       if (snapshot.empty) {

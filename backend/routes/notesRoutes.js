@@ -341,7 +341,7 @@ function createNotesRoutes({ db }) {
 
   router.put("/shares/:shareId", async (req, res) => {
     try {
-      const { title, encryptedContent } = req.body;
+      const { title, encryptedContent, encryptionType } = req.body;
       const shareRef = db.collection("noteShares").doc(req.params.shareId);
       const shareDoc = await shareRef.get();
 

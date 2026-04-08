@@ -1496,9 +1496,12 @@ function canReadSharedContent() {
 }
 
 async function decryptSharedPayload(sharedPayload, password = "") {
-  console.log("decryptSharedPayload called, canReadSharedContent:", canReadSharedContent(), "encryptionType:", detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType));
-  if (!canReadSharedContent()) return "";
+  console.log("decryptSharedPayload called, encryptionType:", detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType));
   const encryptionType = detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType);
+  
+  // Symmetric only needs password, no personal key required
+  // Public-key needs personal key (canReadSharedContent must be true)
+  if (encryptionType === "public-key" && !canReadSharedContent()) return "";
   if (!sharedPayload?.encryptedContent || !encryptionType || !window.NikkiSecurity) return "";
 
   try {
@@ -1545,7 +1548,8 @@ function updateSharedViewForEncryption(sharedPayload) {
       : (isVi ? "Ghi chú này dùng public-key và sẽ giải mã bằng private key của người nhận." : "This note uses public-key sharing and decrypts with the recipient's private key.");
   }
   updateShareAuthGate(sharedPayload);
-  if (els.sharedNoteKey && !canReadSharedContent()) {
+  const isPublicKey = detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType) === "public-key";
+  if (els.sharedNoteKey && isPublicKey && !canReadSharedContent()) {
     els.sharedNoteKey.textContent = isVi
       ? "Hãy mở khóa nhật ký trước, nếu chưa nội dung sẽ chỉ hiển thị dạng mã hóa."
       : "Unlock the diary first. Until then, the shared content stays encrypted.";
@@ -2723,12 +2727,16 @@ function initDashboardPage() {
   
   on(els.sharedNoteUnlock, "click", async () => {
     if (!state.sharedPayload || state.sharedPayload.canView === false) return showToast(t().toasts.invalidKey);
-    if (!canReadSharedContent()) return showToast(t().toasts.needUnlock);
     const encryptionType = detectShareEncryptionType(state.sharedPayload.encryptedContent, state.sharedPayload.encryptionType);
+    
+    // Symmetric encryption: only needs password
+    // Public-key encryption: needs private key (personal diary unlock)
+    if (encryptionType === "public-key" && !canReadSharedContent()) return showToast(t().toasts.needUnlock);
     if (encryptionType === "public-key" && (!hasActiveSession() || !hasStoredPrivateKeyForCurrentUser())) {
       updateShareAuthGate(state.sharedPayload);
       return showToast(state.language === "vi" ? "Hãy đăng nhập đúng tài khoản người nhận để mở ghi chú này." : "Please sign in with the recipient account to open this note.");
     }
+    
     const password = encryptionType === "symmetric" ? (els.sharedNoteAccessKey?.value.trim() || "") : "";
     console.log("Unlocking shared note, encryptionType:", encryptionType, "password provided:", !!password, "password length:", password.length);
     const content = await decryptSharedPayload(state.sharedPayload, password);

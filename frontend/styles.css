@@ -2727,7 +2727,12 @@ body[data-page="dashboard"] .nav-pill-container .nav-divider {
   grid-template-columns: 1fr !important;
 }
 
-.dashboard.share-mode .sidebar,
+.dashboard.share-mode .sidebar {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+}
+
 .dashboard.share-mode .dashboard-header .user-menu {
   display: none !important;
 }
@@ -2740,7 +2745,8 @@ body[data-page="dashboard"] .nav-pill-container .nav-divider {
 }
 
 .dashboard.share-mode .dashboard-header {
-  display: none;
+  display: none !important;
+  visibility: hidden !important;
 }
 
 .dashboard.share-mode #share-view {
@@ -2756,6 +2762,15 @@ body[data-page="dashboard"] .nav-pill-container .nav-divider {
   padding: 32px;
   border-radius: 30px;
   background: rgba(255, 250, 244, 0.92);
+}
+
+.main-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.main-shell .dashboard.share-mode {
+  min-height: 100vh;
 }
 
 .share-auth-gate {

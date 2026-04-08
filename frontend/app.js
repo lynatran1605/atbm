@@ -4,7 +4,7 @@ const on = (el, eventName, handler) => el && el.addEventListener(eventName, hand
 
 const state = {
   language: localStorage.getItem("diaryLanguage") || "vi",
-  currentScreen: "dashboard-home",
+  currentScreen: localStorage.getItem("diaryCurrentScreen") || "dashboard-home",
   token: localStorage.getItem("diaryToken") || "",
   user: JSON.parse(localStorage.getItem("diaryUser") || "null"),
   notes: [],
@@ -592,6 +592,7 @@ const els = {
   loginIdentifierLabel: byId("login-identifier-label"),
   loginPasswordLabel: byId("login-password-label"),
   loginIdentifier: byId("login-identifier"),
+  loginIdentifierError: byId("login-identifier-error"),
   loginPassword: byId("login-password"),
   togglePassword: byId("toggle-password"),
   loginSubmit: byId("login-submit"),
@@ -603,6 +604,7 @@ const els = {
   registerEmailLabel: byId("register-email-label"),
   registerPasswordLabel: byId("register-password-label"),
   registerUsername: byId("register-username"),
+  registerUsernameError: byId("register-username-error"),
   registerEmail: byId("register-email"),
   registerPassword: byId("register-password"),
   registerSubmit: byId("register-submit"),
@@ -631,6 +633,7 @@ const els = {
   trashCount: byId("trash-count"),
   keyStatus: byId("key-status"),
   noteSearch: byId("note-search"),
+  notesToolbarKey: byId("notes-toolbar-key"),
   unlockNotes: byId("unlock-notes"),
   notesSecurityHint: byId("notes-security-hint"),
   notesList: byId("notes-list"),
@@ -690,9 +693,11 @@ const els = {
   recoverySubmit: byId("recovery-submit"),
   recoveryClose: byId("recovery-close"),
   securityModal: byId("security-modal"),
+  securityOptionRsa: byId("security-option-rsa"),
   securityOptionPassword: byId("security-option-password"),
   securityOptionKey: byId("security-option-key"),
   securityOptionDelete: byId("security-option-delete"),
+  securityKeypairModal: byId("security-keypair-modal"),
   securityPasswordModal: byId("security-password-modal"),
   securityCurrentPassword: byId("security-current-password"),
   securityNewPassword: byId("security-new-password"),
@@ -715,10 +720,6 @@ const els = {
   deleteAccountConfirmModal: byId("delete-account-confirm-modal"),
   deleteAccountFinalConfirm: byId("delete-account-final-confirm"),
   deleteAccountFinalClose: byId("delete-account-final-close"),
-  notesUnlockModal: byId("notes-unlock-modal"),
-  notesUnlockKey: byId("notes-unlock-key"),
-  notesUnlockConfirm: byId("notes-unlock-confirm"),
-  notesUnlockClose: byId("notes-unlock-close"),
   shareKeyModal: byId("share-key-modal"),
   shareEncryptionType: byId("share-encryption-type"),
   shareSymmetricField: byId("share-symmetric-field"),
@@ -727,6 +728,7 @@ const els = {
   shareRecipientInput: byId("share-recipient-input"),
   shareKeyConfirm: byId("share-key-confirm"),
   shareKeyClose: byId("share-key-close"),
+  securityKeypairClose: byId("security-keypair-close"),
   toast: byId("toast"),
   sharedNoteTitle: byId("shared-note-title"),
   sharedNoteTitleInput: byId("shared-note-title-input"),
@@ -1055,6 +1057,15 @@ function goToLogin(newTab = false) {
 }
 function goToDashboard(hash = "") { window.location.href = `/dashboard.html${hash}`; }
 
+function persistCurrentScreen(screenId) {
+  if (!screenId || screenId === "share-view") return;
+  localStorage.setItem("diaryCurrentScreen", screenId);
+}
+
+function getHomePrimaryActionLabel() {
+  return state.language === "vi" ? "Đăng nhập" : "Login";
+}
+
 function hasStoredLogin() {
   return Boolean(state.token && state.user);
 }
@@ -1069,6 +1080,52 @@ function normalizeUsername(value = "") {
 
 function isValidUsername(value = "") {
   return /^[a-z0-9_]{4,32}$/.test(normalizeUsername(value));
+}
+
+function isValidLoginIdentifier(value = "") {
+  return /^[a-z0-9@._-]+$/.test(String(value || "").trim());
+}
+
+function setFieldError(element, message = "") {
+  if (!element) return;
+  element.textContent = message;
+  element.classList.toggle("hidden", !message);
+}
+
+function getLoginIdentifierRuleMessage() {
+  return state.language === "vi"
+    ? "Chỉ có thể đăng nhập bằng chữ thường không dấu, số và các ký tự như @ . _ -"
+    : "Use lowercase letters, numbers, and characters like @ . _ - only.";
+}
+
+function getRegisterUsernameRuleMessage() {
+  return state.language === "vi"
+    ? "Tên người dùng chỉ dùng chữ thường không dấu, số hoặc dấu gạch dưới, dài 4-32 ký tự."
+    : "Username must use 4-32 lowercase letters, numbers, or underscores only.";
+}
+
+function validateLoginIdentifierField() {
+  const value = els.loginIdentifier?.value || "";
+  const trimmed = value.trim();
+  if (!trimmed) {
+    setFieldError(els.loginIdentifierError, "");
+    return true;
+  }
+  const valid = !/\s/.test(value) && isValidLoginIdentifier(trimmed);
+  setFieldError(els.loginIdentifierError, valid ? "" : getLoginIdentifierRuleMessage());
+  return valid;
+}
+
+function validateRegisterUsernameField() {
+  const value = els.registerUsername?.value || "";
+  const trimmed = value.trim();
+  if (!trimmed) {
+    setFieldError(els.registerUsernameError, "");
+    return true;
+  }
+  const valid = !/\s/.test(value) && /^[a-z0-9_]{4,32}$/.test(trimmed);
+  setFieldError(els.registerUsernameError, valid ? "" : getRegisterUsernameRuleMessage());
+  return valid;
 }
 
 function hasStoredPrivateKeyForCurrentUser() {
@@ -1131,6 +1188,8 @@ function renderMarketingContent() {
   if (els.aboutStat2) els.aboutStat2.textContent = copy.public.aboutStats[1];
   if (els.aboutStat3) els.aboutStat3.textContent = copy.public.aboutStats[2];
   renderLandingExtras();
+  if (els.navLogin) els.navLogin.textContent = copy.nav.login;
+  if (els.heroLogin) els.heroLogin.textContent = getHomePrimaryActionLabel();
   if (page === "login") {
     if (els.authKicker) els.authKicker.textContent = copy.auth.kicker;
     if (els.authTitle) els.authTitle.textContent = copy.auth.title;
@@ -1156,6 +1215,8 @@ function renderMarketingContent() {
     if (els.loginIdentifier) els.loginIdentifier.placeholder = "you@example.com";
     if (els.loginPassword) els.loginPassword.placeholder = "********";
     if (els.registerUsername) els.registerUsername.placeholder = state.language === "vi" ? "vi_du123" : "example_123";
+    validateLoginIdentifierField();
+    validateRegisterUsernameField();
     renderOtpCardContent();
   }
   if (page === "dashboard") {
@@ -1430,7 +1491,13 @@ function detectShareEncryptionType(payload, explicitType = "") {
   return explicitType || window.NikkiSecurity?.detectEncryptionType(payload) || "";
 }
 
+function canReadSharedContent() {
+  return state.notesUnlocked;
+}
+
 async function decryptSharedPayload(sharedPayload, password = "") {
+  console.log("decryptSharedPayload called, canReadSharedContent:", canReadSharedContent(), "encryptionType:", detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType));
+  if (!canReadSharedContent()) return "";
   const encryptionType = detectShareEncryptionType(sharedPayload?.encryptedContent, sharedPayload?.encryptionType);
   if (!sharedPayload?.encryptedContent || !encryptionType || !window.NikkiSecurity) return "";
 
@@ -1442,12 +1509,14 @@ async function decryptSharedPayload(sharedPayload, password = "") {
     }
 
     if (encryptionType === "symmetric") {
+      console.log("Attempting symmetric decryption with password provided:", !!password);
       if (!password) return "";
       return await window.NikkiSecurity.decryptContentWithPassword(sharedPayload.encryptedContent, password);
     }
 
     return "";
-  } catch {
+  } catch (error) {
+    console.log("Decryption failed:", error.message);
     return "";
   }
 }
@@ -1476,6 +1545,11 @@ function updateSharedViewForEncryption(sharedPayload) {
       : (isVi ? "Ghi chú này dùng public-key và sẽ giải mã bằng private key của người nhận." : "This note uses public-key sharing and decrypts with the recipient's private key.");
   }
   updateShareAuthGate(sharedPayload);
+  if (els.sharedNoteKey && !canReadSharedContent()) {
+    els.sharedNoteKey.textContent = isVi
+      ? "Hãy mở khóa nhật ký trước, nếu chưa nội dung sẽ chỉ hiển thị dạng mã hóa."
+      : "Unlock the diary first. Until then, the shared content stays encrypted.";
+  }
 }
 
 function updateShareAuthGate(sharedPayload = state.sharedPayload) {
@@ -1515,6 +1589,7 @@ function setSession(data, password) {
   state.token = data.token;
   state.user = data.user;
   state.tempPassword = password;
+  state.currentScreen = localStorage.getItem("diaryCurrentScreen") || "dashboard-home";
   state.notesUnlocked = false;
   state.personalKey = "";
   state.hasAuthenticatedInSession = true;
@@ -1546,6 +1621,7 @@ function clearSession() {
   state.profileAccessUnlocked = false;
   state.sharedPayload = null;
   state.hasAuthenticatedInSession = false;
+  state.currentScreen = "dashboard-home";
   localStorage.removeItem("diaryToken");
   localStorage.removeItem("diaryUser");
   sessionStorage.removeItem("tempPassword");
@@ -1618,7 +1694,14 @@ function updateUnlockStateUI() {
   const copy = t().dashboard;
   els.unlockNotes.textContent = state.notesUnlocked ? copy.lockButton : copy.unlockButton;
   els.notesSecurityHint.textContent = state.notesUnlocked ? copy.unlockedHint : copy.lockedHint;
-  els.noteSearch.placeholder = t().toasts.searchPlaceholder;
+  if (els.noteSearch) {
+    els.noteSearch.disabled = !state.notesUnlocked;
+    els.noteSearch.placeholder = state.notesUnlocked
+      ? t().toasts.searchPlaceholder
+      : state.language === "vi"
+        ? "Mở khóa để tìm kiếm..."
+        : "Unlock to search...";
+  }
   if (els.shareStatus) els.shareStatus.textContent = t().toasts.shareInfo;
   if (els.noteEditor) els.noteEditor.classList.toggle("is-locked", !state.notesUnlocked);
   if (els.saveNote) els.saveNote.disabled = !state.notesUnlocked;
@@ -1675,6 +1758,7 @@ function switchScreen(screenId) {
   if (!els.screens.length) return;
   if (screenId !== "share-view") {
     state.previousScreen = screenId;
+    persistCurrentScreen(screenId);
   }
   state.currentScreen = screenId;
   const dashboardRoot = document.querySelector(".dashboard");
@@ -2069,14 +2153,17 @@ function openSecurityStepModal(element) {
 }
 
 function openUnlockNotesModal() {
-  if (els.notesUnlockKey) {
-    els.notesUnlockKey.value = state.personalKey || (isPersonalKeyLinkedToPassword() ? state.tempPassword : "");
-  }
-  openModal(els.notesUnlockModal);
+  const promptMessage = state.language === "vi"
+    ? "Nhập khóa nhật ký để mở khóa:"
+    : "Enter your personal key to unlock the diary:";
+  const defaultKey = state.personalKey || (isPersonalKeyLinkedToPassword() ? state.tempPassword : "");
+  const key = window.prompt(promptMessage, defaultKey);
+  if (key === null) return;
+  confirmUnlockNotes(key.trim());
 }
 
-function confirmUnlockNotes() {
-  const key = els.notesUnlockKey?.value.trim() || "";
+function confirmUnlockNotes(key = "") {
+  key = String(key || els.notesToolbarKey?.value || "").trim();
   if (!key) return showToast(t().toasts.needKey);
   if (!hasValidPersonalKey(key)) return showToast(t().toasts.invalidKey);
 
@@ -2089,9 +2176,9 @@ function confirmUnlockNotes() {
         return showToast(t().toasts.invalidKey);
       }
       state.personalKey = key;
+      if (els.notesToolbarKey) els.notesToolbarKey.value = key;
       sessionStorage.setItem("personalKey", key);
       state.notesUnlocked = true;
-      closeModal(els.notesUnlockModal);
       renderDashboardStats();
       updateUnlockStateUI();
       renderNotes();
@@ -2345,7 +2432,7 @@ async function loadSharedNote() {
     }
     if (els.sharedToolbar) els.sharedToolbar.classList.add("hidden");
     if (els.sharedNoteSave) els.sharedNoteSave.classList.add("hidden");
-    if (detectShareEncryptionType(data.encryptedContent, data.encryptionType) === "public-key" && hasActiveSession() && hasStoredPrivateKeyForCurrentUser()) {
+    if (canReadSharedContent() && detectShareEncryptionType(data.encryptedContent, data.encryptionType) === "public-key" && hasActiveSession() && hasStoredPrivateKeyForCurrentUser()) {
       const content = await decryptSharedPayload(data);
       if (content && els.sharedNoteEditor) {
         els.sharedNoteEditor.innerHTML = content;
@@ -2386,7 +2473,7 @@ window.openSharedDashboardNote = async function openSharedDashboardNote(shareId)
     if (els.sharedToolbar) els.sharedToolbar.classList.add("hidden");
     if (els.sharedNoteSave) els.sharedNoteSave.classList.add("hidden");
 
-    if (detectShareEncryptionType(data.encryptedContent, data.encryptionType) === "public-key") {
+    if (canReadSharedContent() && detectShareEncryptionType(data.encryptedContent, data.encryptionType) === "public-key") {
       const content = await decryptSharedPayload(data);
       if (content && els.sharedNoteEditor) {
         els.sharedNoteEditor.innerHTML = content;
@@ -2445,6 +2532,7 @@ function initCommonEvents() {
   on(els.languageToggle, "click", () => {
     state.language = state.language === "vi" ? "en" : "vi";
     renderMarketingContent();
+    if (page === "dashboard" && els.shareTopbarLogin) els.shareTopbarLogin.textContent = t().nav.login;
     renderNotes();
     renderSharedLists();   // <-- Ép dịch ngay danh sách chia sẻ
     renderCalendarWidget(); // <-- Ép dịch luôn cả Lịch
@@ -2459,9 +2547,11 @@ function initHomePage() {
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
   on(els.brandHome, "click", () => goToHome("home"));
-  on(els.navLogin, "click", () => (hasStoredLogin() ? goToDashboard() : goToLogin()));
+  on(els.navLogin, "click", () => goToLogin());
   on(els.heroAbout, "click", () => byId("about")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-  on(els.heroLogin, "click", () => goToLogin());
+  on(els.heroLogin, "click", () => {
+    goToLogin();
+  });
   const section = byId(window.location.hash.replace("#", ""));
   if (section) requestAnimationFrame(() => section.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
@@ -2478,6 +2568,8 @@ function initLoginPage() {
   on(els.authBackHome, "click", () => goToHome("home"));
   on(els.goRegister, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("register"); });
   on(els.goLogin, "click", () => { state.authFlow = "register"; sessionStorage.setItem("authFlow", "register"); toggleAuthCard("login"); });
+  on(els.loginIdentifier, "input", () => validateLoginIdentifierField());
+  on(els.registerUsername, "input", () => validateRegisterUsernameField());
   on(els.togglePassword, "click", () => {
     const currentType = els.loginPassword.getAttribute("type");
     const copy = t().auth;
@@ -2487,7 +2579,9 @@ function initLoginPage() {
   
   on(els.loginSubmit, "click", async () => {
     try {
-      const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ identifier: els.loginIdentifier.value.trim(), password: els.loginPassword.value }) });
+      const identifier = els.loginIdentifier.value.trim();
+      if (!validateLoginIdentifierField()) return;
+      const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ identifier, password: els.loginPassword.value }) });
       setSession(data, els.loginPassword.value);
       showToast(t().toasts.loginSuccess);
       await ensureUserKeyPair();
@@ -2511,7 +2605,8 @@ function initLoginPage() {
   
   on(els.registerSubmit, "click", async () => {
     try {
-      const username = normalizeUsername(els.registerUsername.value);
+      const username = els.registerUsername.value.trim();
+      if (!validateRegisterUsernameField()) return;
       if (!isValidUsername(username)) {
         return showToast(state.language === "vi"
           ? "Tên người dùng chỉ được dùng chữ thường không dấu, số hoặc dấu gạch dưới, dài 4-32 ký tự."
@@ -2565,6 +2660,8 @@ function initLoginPage() {
 
 function initDashboardPage() {
   renderMarketingContent();
+  if (els.shareTopbarLogin) els.shareTopbarLogin.textContent = t().nav.login;
+  if (els.notesToolbarKey && state.personalKey) els.notesToolbarKey.value = state.personalKey;
   loadCalendarNotes();
   renderCalendarWidget();
   initCalendarControls();
@@ -2626,13 +2723,16 @@ function initDashboardPage() {
   
   on(els.sharedNoteUnlock, "click", async () => {
     if (!state.sharedPayload || state.sharedPayload.canView === false) return showToast(t().toasts.invalidKey);
+    if (!canReadSharedContent()) return showToast(t().toasts.needUnlock);
     const encryptionType = detectShareEncryptionType(state.sharedPayload.encryptedContent, state.sharedPayload.encryptionType);
     if (encryptionType === "public-key" && (!hasActiveSession() || !hasStoredPrivateKeyForCurrentUser())) {
       updateShareAuthGate(state.sharedPayload);
       return showToast(state.language === "vi" ? "Hãy đăng nhập đúng tài khoản người nhận để mở ghi chú này." : "Please sign in with the recipient account to open this note.");
     }
     const password = encryptionType === "symmetric" ? (els.sharedNoteAccessKey?.value.trim() || "") : "";
+    console.log("Unlocking shared note, encryptionType:", encryptionType, "password provided:", !!password, "password length:", password.length);
     const content = await decryptSharedPayload(state.sharedPayload, password);
+    console.log("Decryption result:", content ? "success, content length:" + content.length : "failed");
     if (!content) return showToast(t().toasts.sharedUnlockFailed);
 
     const canEdit = Boolean(state.sharedPayload.canEdit && (state.sharedPayload.isOwner || state.sharedPayload.isRecipient));
@@ -2769,11 +2869,25 @@ function initDashboardPage() {
   
   on(els.downloadWord, "click", downloadCurrentNoteAsWord);
   on(els.noteSearch, "input", renderNotes);
+  on(els.notesToolbarKey, "keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    confirmUnlockNotes();
+  });
   on(els.unlockNotes, "click", () => {
     if (state.notesUnlocked) {
       state.notesUnlocked = false;
       state.personalKey = "";
+      if (els.notesToolbarKey) els.notesToolbarKey.value = "";
       sessionStorage.removeItem("personalKey");
+      if (state.sharedPayload && els.sharedNoteEditor) {
+        els.sharedNoteEditor.innerHTML = state.sharedPayload.encryptedContent || "";
+        els.sharedNoteEditor.contentEditable = false;
+        if (els.sharedToolbar) els.sharedToolbar.classList.add("hidden");
+        if (els.sharedNoteSave) els.sharedNoteSave.classList.add("hidden");
+        if (els.sharedNoteUnlock) els.sharedNoteUnlock.classList.remove("hidden");
+        updateSharedViewForEncryption(state.sharedPayload);
+      }
       resetNoteEditorForNewEntry();
       closeNoteModal();
       renderDashboardStats();
@@ -2793,6 +2907,7 @@ function initDashboardPage() {
   });
   on(els.saveProfile, "click", saveProfile);
   on(els.openSecurityPanel, "click", () => openModal(els.securityModal));
+  document.querySelectorAll("[data-close-modal]").forEach((button) => on(button, "click", () => closeModal(byId(button.dataset.closeModal))));
   on(els.showPrivateKey, "click", () => {
     state.rsaPrivateKeyVisible = !state.rsaPrivateKeyVisible;
     updateSecurityKeyUI();
@@ -2819,6 +2934,10 @@ function initDashboardPage() {
       showToast("RSA key pair regenerated.");
     } catch (error) { showToast(error.message); }
   });
+  on(els.securityOptionRsa, "click", () => {
+    updateSecurityKeyUI();
+    openSecurityStepModal(els.securityKeypairModal);
+  });
   on(els.securityOptionPassword, "click", () => openSecurityStepModal(els.securityPasswordModal));
   on(els.securityOptionKey, "click", () => openSecurityStepModal(els.personalKeyModal));
   on(els.securityOptionDelete, "click", () => openSecurityStepModal(els.deleteAccountModal));
@@ -2831,6 +2950,7 @@ function initDashboardPage() {
   on(els.deleteAccountFinalConfirm, "click", finalizeAccountDeletion);
   on(els.deleteAccountFinalClose, "click", () => closeModal(els.deleteAccountConfirmModal));
   on(els.securityClose, "click", () => closeModal(els.securityModal));
+  on(els.securityKeypairClose, "click", () => closeModal(els.securityKeypairModal));
   on(els.securityPasswordClose, "click", () => closeModal(els.securityPasswordModal));
   on(els.personalKeyClose, "click", () => closeModal(els.personalKeyModal));
   on(els.deleteAccountClose, "click", () => closeModal(els.deleteAccountModal));
@@ -2863,9 +2983,6 @@ function initDashboardPage() {
     await navigator.clipboard.writeText(els.shareLinkOutput.value);
     showToast(t().toasts.shareCreated);
   });
-  
-  on(els.notesUnlockConfirm, "click", confirmUnlockNotes);
-  on(els.notesUnlockClose, "click", () => closeModal(els.notesUnlockModal));
   
   on(els.shareKeyConfirm, "click", confirmShareSelectedNote);
   on(els.shareKeyClose, "click", () => closeModal(els.shareKeyModal));

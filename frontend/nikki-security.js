@@ -236,9 +236,11 @@
 
   async function decryptContentWithPassword(payload, password) {
     ensureCrypto();
+    console.log("decryptContentWithPassword called, payload type:", typeof payload, "password provided:", !!password);
     if (!payload) return "";
 
     const parsedPayload = typeof payload === "string" ? JSON.parse(payload) : payload;
+    console.log("Parsed payload keys:", Object.keys(parsedPayload));
     const aesKey = await derivePasswordKey(password, base64ToArrayBuffer(parsedPayload.salt));
     const plainBuffer = await global.crypto.subtle.decrypt(
       {
@@ -249,7 +251,9 @@
       base64ToArrayBuffer(parsedPayload.ciphertext)
     );
 
-    return new TextDecoder().decode(plainBuffer);
+    const result = new TextDecoder().decode(plainBuffer);
+    console.log("Symmetric decryption successful, result length:", result.length);
+    return result;
   }
 
   function detectEncryptionType(payload) {
